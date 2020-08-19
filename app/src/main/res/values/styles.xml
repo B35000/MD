@@ -5,6 +5,7 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:navigationBarColor">@color/nav_bar_color</item>
     </style>
 
     <style name="customSwitch" parent="Theme.AppCompat.Light"> <!--Theme for the app switch. Android switches use colorAccent but I wanted them to be using colorPrimary instead-->

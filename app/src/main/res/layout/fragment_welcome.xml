@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Fragments.Welcome">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:background="@color/window_background"
+        android:layout_margin="20dp"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:id="@+id/begin_layout"
+            android:layout_width="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:paddingBottom="5dp"
+            android:paddingTop="5dp"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:textSize="17sp"
+                    android:layout_gravity="center_vertical"
+                    android:textColor="@color/colorPrimary"
+                    android:layout_height="wrap_content"
+                    android:text="@string/Continue" />
+
+
+                <ImageView
+                    android:layout_width="21dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="5dp"
+                    android:translationY="1dp"
+                    android:src="@drawable/next_arrow"
+                    android:layout_height="18dp"/>
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:orientation="vertical"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:textSize="30sp"
+                android:textColor="@color/colorAccent"
+                android:textStyle="bold"
+                android:layout_height="wrap_content"
+                android:text="@string/welcome" />
+
+            <TextView
+                android:id="@+id/intro"
+                android:layout_width="wrap_content"
+                android:layout_marginTop="5dp"
+                android:textSize="17sp"
+                android:layout_height="wrap_content"
+                android:text="@string/you_can_choose_if_you_prefer_a_light_or_dark_mode" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_marginTop="20dp"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_alignParentEnd="true"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/dark_mode_text"
+                        android:layout_width="wrap_content"
+                        android:textSize="13sp"
+                        android:layout_marginEnd="5dp"
+                        android:layout_gravity="center_vertical"
+                        android:layout_height="wrap_content"
+                        android:text="@string/turn_on_dark_mode" />
+
+                    <Switch
+                        android:id="@+id/night_mode_switch"
+                        android:layout_width="wrap_content"
+                        android:enabled="true"
+                        android:layout_height="wrap_content"/>
+
+                </LinearLayout>
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</FrameLayout>
