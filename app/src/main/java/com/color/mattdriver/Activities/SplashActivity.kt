@@ -37,7 +37,7 @@ class SplashActivity : AppCompatActivity() {
                 openMap()
             }
         })
-
+        Constants().maintain_theme(applicationContext)
     }
 
     override fun onActivityResult(

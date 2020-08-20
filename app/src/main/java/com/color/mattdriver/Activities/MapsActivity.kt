@@ -17,6 +17,7 @@ import androidx.appcompat.app.ActionBar
 import androidx.core.app.ActivityCompat
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import com.color.mattdriver.Constants
+import com.color.mattdriver.Fragments.JoinOrganisation
 import com.color.mattdriver.Fragments.Welcome
 import com.color.mattdriver.R
 import com.color.mattdriver.databinding.ActivityMapsBinding
@@ -32,10 +33,13 @@ import kotlin.concurrent.schedule
 
 class MapsActivity : AppCompatActivity(),
     OnMapReadyCallback,
-    Welcome.WelcomeInterface
+    Welcome.WelcomeInterface,
+    JoinOrganisation.JoinOrganisationInterface
 {
     val TAG = "MapsActivity"
     val _welcome = "_welcome"
+    val _join_organisation = "_join_organisation"
+
     private lateinit var binding: ActivityMapsBinding
     private lateinit var mMap: GoogleMap
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
@@ -48,6 +52,7 @@ class MapsActivity : AppCompatActivity(),
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.e(TAG,"onCreate")
         super.onCreate(savedInstanceState)
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -60,15 +65,18 @@ class MapsActivity : AppCompatActivity(),
         set_up_getting_my_location()
         set_network_change_receiver()
 
-//        if(savedInstanceState==null){
-//            if(constants.SharedPreferenceManager(applicationContext).isFirstTimeLaunch()){
-//                open_welcome_fragment()
-//            }
+//        if(constants.SharedPreferenceManager(applicationContext).isFirstTimeLaunch()){
+//            open_welcome_fragment()
 //        }
+//
+        binding.continueLayout.setOnClickListener {
+            supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                .replace(binding.money.id,JoinOrganisation.newInstance("",""),_join_organisation).commit()
+        }
+
     }
 
     fun open_welcome_fragment(){
-        binding.money.visibility = View.VISIBLE
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             .replace(binding.money.id,Welcome.newInstance("",""),_welcome).commit()
     }
@@ -235,11 +243,34 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun onDestroy() {
+        Log.e(TAG,"onDestroy")
         super.onDestroy()
         if (this.mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(locationCallback)
         }
     }
+
+    override fun onStop() {
+        super.onStop()
+        Log.e(TAG,"onStop")
+    }
+
+    override fun onStart() {
+        Log.e(TAG,"onStart")
+        super.onStart()
+    }
+
+    override fun onPause() {
+        Log.e(TAG,"onPause")
+        super.onPause()
+    }
+
+    override fun onResume() {
+        Log.e(TAG,"onResume")
+        super.onResume()
+    }
+
+
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
@@ -248,6 +279,10 @@ class MapsActivity : AppCompatActivity(),
         val sydney = LatLng(-34.0, 151.0)
         mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+    }
+
+    override fun whenCreateOrganisation() {
+
     }
 
 

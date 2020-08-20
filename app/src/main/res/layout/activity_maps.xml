@@ -25,8 +25,145 @@
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="100dp">
+                android:layout_height="130dp">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:orientation="horizontal"
+                    android:layout_marginHorizontal="15dp"
+                    android:layout_marginVertical="20dp"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_marginTop="3dp"
+                        android:background="@drawable/bus_loc"
+                        android:layout_height="60dp"/>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <RelativeLayout
+                            android:id="@+id/view_layout"
+                            android:layout_width="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:visibility="gone"
+                            android:layout_alignParentEnd="true"
+                            android:layout_height="wrap_content">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center"
+                                android:layout_height="wrap_content">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:textSize="14sp"
+                                    android:layout_gravity="center_vertical"
+                                    android:textColor="@color/colorPrimary"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/View" />
+
+
+                                <ImageView
+                                    android:layout_width="15dp"
+                                    android:layout_gravity="center_vertical"
+                                    android:layout_marginStart="5dp"
+                                    android:translationY="1dp"
+                                    android:src="@drawable/next_arrow"
+                                    android:layout_height="12dp"/>
+
+                            </LinearLayout>
+
+                        </RelativeLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:orientation="vertical"
+                            android:layout_marginStart="10dp"
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:id="@+id/title"
+                                android:layout_width="wrap_content"
+                                android:textSize="16sp"
+                                android:textColor="@color/colorAccent"
+                                android:layout_height="wrap_content"
+                                android:text="Join an Organisation." />
+
+                            <TextView
+                                android:id="@+id/destination_textview"
+                                android:layout_width="wrap_content"
+                                android:textSize="13sp"
+                                android:layout_marginTop="3dp"
+                                android:layout_height="wrap_content"
+                                android:text="To share your location on a route." />
+
+                            <RelativeLayout
+                                android:id="@+id/sharing_location_layout"
+                                android:layout_width="match_parent"
+                                android:visibility="gone"
+                                android:layout_marginTop="10dp"
+                                android:layout_height="wrap_content">
+
+                                <TextView
+                                    android:id="@+id/dark_mode_text"
+                                    android:layout_width="wrap_content"
+                                    android:textSize="13sp"
+                                    android:layout_centerVertical="true"
+                                    android:layout_height="wrap_content"
+                                    android:text="Stop sharing location" />
+
+                                <Switch
+                                    android:id="@+id/night_mode_switch"
+                                    android:layout_width="wrap_content"
+                                    android:enabled="true"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_height="wrap_content"/>
+
+                            </RelativeLayout>
+
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_marginTop="10dp"
+                                android:layout_height="wrap_content">
+
+                                <LinearLayout
+                                    android:id="@+id/continue_layout"
+                                    android:layout_width="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:layout_alignParentEnd="true"
+                                    android:gravity="center"
+                                    android:layout_height="wrap_content">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:textSize="14sp"
+                                        android:layout_gravity="center_vertical"
+                                        android:textColor="@color/colorPrimary"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/Continue" />
+
+
+                                    <ImageView
+                                        android:layout_width="15dp"
+                                        android:layout_gravity="center_vertical"
+                                        android:layout_marginStart="5dp"
+                                        android:translationY="1dp"
+                                        android:src="@drawable/next_arrow"
+                                        android:layout_height="12dp"/>
+
+                                </LinearLayout>
+
+                            </RelativeLayout>
+
+                        </LinearLayout>
+
+                    </RelativeLayout>
+
+                </LinearLayout>
 
             </RelativeLayout>
 
@@ -34,8 +171,6 @@
 
         <RelativeLayout
             android:id="@+id/money"
-            android:visibility="gone"
-            android:background="@color/window_background"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 

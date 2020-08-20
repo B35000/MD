@@ -11,4 +11,7 @@
     <string name="you_can_choose_if_you_prefer_a_light_or_dark_mode">You can choose if you prefer a light or dark mode</string>
     <string name="turn_on_dark_mode">Turn on dark mode</string>
     <string name="turn_off_dark_mode">Turn off dark mode</string>
+    <string name="View">View</string>
+    <string name="you_need_to_join_an_organisation_to_pick_a_route_to_work_with">You need to join an organisation to pick a route to work with</string>
+    <string name="join_organisation">Join Organisation.</string>
 </resources>
