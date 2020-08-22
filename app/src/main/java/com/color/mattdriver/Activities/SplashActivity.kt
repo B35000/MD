@@ -10,11 +10,15 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import com.color.mattdriver.Constants
 import com.color.mattdriver.Models.number
+import com.color.mattdriver.Models.organisation
 import com.color.mattdriver.R
 import com.color.mattdriver.Utilities.GpsUtils
 import com.color.mattdriver.databinding.ActivitySplashBinding
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.google.gson.Gson
 import com.hbb20.CountryCodePicker
 import java.util.*
 
@@ -24,6 +28,9 @@ class SplashActivity : AppCompatActivity() {
     var ACCESS_FINE_LOCATION_CODE = 3310
     private var mAuth: FirebaseAuth? = null
     val constants = Constants()
+    var organisations: ArrayList<organisation> = ArrayList()
+    var my_organisations: ArrayList<String> = ArrayList()
+    val db = Firebase.firestore
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,10 +62,15 @@ class SplashActivity : AppCompatActivity() {
 
     fun openMap(){
         if(constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!=null){
-            val intent = Intent(this, MapsActivity::class.java)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-            finish()
+            if(constants.SharedPreferenceManager(applicationContext).get_current_data().equals("")){
+                //theres no data, we nee to load stuff first
+                load_organisations()
+            }else {
+                val intent = Intent(this, MapsActivity::class.java)
+                startActivity(intent)
+                overridePendingTransition(0, 0)
+                finish()
+            }
         }else{
             startAnonymousSignUp()
         }
@@ -106,4 +118,60 @@ class SplashActivity : AppCompatActivity() {
         return netInfo != null && netInfo.isConnected
     }
 
+    fun load_organisations(){
+        val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+        organisations.clear()
+        db.collection(constants.organisations)
+            .document(user.phone.country_name)
+            .collection(constants.country_organisations)
+            .get().addOnSuccessListener {
+                if(it.documents.isNotEmpty()){
+                    for(item in it.documents){
+                        val org_id = item["org_id"] as String
+                        val org_name = item["name"] as String
+                        val country = item["country"] as String
+                        val creation_time = item["creation_time"] as Long
+
+                        val org = organisation(org_name,creation_time)
+                        org.org_id = org_id
+                        org.country = country
+
+                        organisations.add(org)
+                    }
+                }
+                load_my_organisations()
+            }
+    }
+
+    fun load_my_organisations(){
+        my_organisations.clear()
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        db.collection(constants.coll_users).document(uid)
+            .collection(constants.my_organisations).get()
+            .addOnSuccessListener {
+                if(it.documents.isNotEmpty()){
+                    for(item in it.documents){
+                        val org_id = item["org_id"] as String
+                        my_organisations.add(org_id)
+                    }
+                }
+                store_session_data()
+                openMap()
+            }
+    }
+
+    fun store_session_data(){
+        val session = Gson().toJson(MapsActivity.session_data(organisations, my_organisations))
+        constants.SharedPreferenceManager(applicationContext).store_current_data(session)
+    }
+
+    fun set_session_data(){
+        val session = constants.SharedPreferenceManager(applicationContext).get_current_data()
+        if(!session.equals("")){
+            //its not empty
+            var session_obj = Gson().fromJson(session, MapsActivity.session_data::class.java)
+            organisations = session_obj.organisations
+            my_organisations = session_obj.my_organisations
+        }
+    }
 }

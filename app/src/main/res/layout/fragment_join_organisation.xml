@@ -7,6 +7,11 @@
     tools:context=".Fragments.JoinOrganisation">
 
     <RelativeLayout
+        android:id="@+id/money"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="20dp"
@@ -56,7 +61,7 @@
             <TextView
                 android:id="@+id/title"
                 android:layout_width="wrap_content"
-                android:textSize="30sp"
+                android:textSize="25sp"
                 android:textColor="@color/colorAccent"
                 android:textStyle="bold"
                 android:layout_height="wrap_content"
@@ -70,13 +75,60 @@
                 android:layout_height="wrap_content"
                 android:text="@string/you_need_to_join_an_organisation_to_pick_a_route_to_work_with" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/organisation_recyclerview"
-                android:layout_width="match_parent"
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipeContainer"
                 android:layout_marginTop="20dp"
-                android:layout_height="match_parent"/>
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/organisation_recyclerview"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="20dp"
+                    android:layout_height="match_parent"/>
+
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/no_orgs_layout"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:orientation="vertical"
+                android:layout_centerInParent="true"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_gravity="center_horizontal"
+                    android:src="@drawable/no_orgs"
+                    android:layout_height="80dp"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:text="There are no"
+                    android:gravity="center"
+                    android:textColor="@color/colorAccent"
+                    android:textSize="16sp"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:text="Organisations"
+                    android:gravity="center"
+                    android:textSize="12sp"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+        </RelativeLayout>
 
     </RelativeLayout>
 

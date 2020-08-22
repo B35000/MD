@@ -2,10 +2,10 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:background="@color/window_background"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/window_background"
-    tools:context=".Fragments.CreateOrganisation">
+    tools:context=".Fragments.OrganisationPasscode">
 
     <RelativeLayout
         android:id="@+id/money"
@@ -39,7 +39,7 @@
                     android:layout_gravity="center_vertical"
                     android:textColor="@color/colorPrimary"
                     android:layout_height="wrap_content"
-                    android:text="Create" />
+                    android:text="@string/Continue" />
 
 
                 <ImageView
@@ -66,7 +66,7 @@
                 android:textColor="@color/colorAccent"
                 android:textStyle="bold"
                 android:layout_height="wrap_content"
-                android:text="Create Organisation" />
+                android:text="Join Passcode." />
 
             <TextView
                 android:id="@+id/intro"
@@ -74,26 +74,13 @@
                 android:layout_marginTop="5dp"
                 android:textSize="17sp"
                 android:layout_height="wrap_content"
-                android:text="Create a new organisation" />
+                android:text="To join this organisation, you need to set its passcode." />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:layout_marginTop="20dp"
                 android:layout_height="wrap_content">
-
-                <com.hbb20.CountryCodePicker
-                    android:id="@+id/ccp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:ccp_arrowColor="@color/colorAccent"
-                    android:translationX="-4dp"
-                    app:ccp_showFullName="true"
-                    app:ccpDialog_textColor="@color/colorAccent"
-                    app:ccp_contentColor="@color/colorAccent"
-                    app:ccp_textGravity="LEFT"
-                    app:ccp_showPhoneCode="false"
-                    app:ccp_showNameCode="false"/>
 
                 <EditText
                     android:id="@+id/editText"
@@ -103,9 +90,54 @@
                     android:paddingRight="20dp"
                     android:paddingBottom="15dp"
                     android:textSize="14sp"
+                    android:textColorHint="@color/hint_color"
+                    android:textColor="@color/colorAccent"
                     android:ems="10"
-                    android:inputType="textPersonName|textCapSentences"
-                    android:hint="New organisation name" />
+                    android:inputType="numberPassword"
+                    android:hint="Passcode" />
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_marginHorizontal="5dp"
+                    android:layout_marginTop="30dp"
+                    app:cardBackgroundColor="@color/card_back"
+                    android:layout_marginBottom="5dp"
+                    android:elevation="2dp"
+                    app:cardCornerRadius="15dp"
+                    android:layout_height="wrap_content">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_marginHorizontal="20dp"
+                        android:layout_marginVertical="20dp"
+                        android:layout_height="wrap_content">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:id="@+id/org_name"
+                                android:layout_width="wrap_content"
+                                android:text="Killeton Sacco Society Kenya"
+                                android:textSize="15sp"
+                                android:textColor="@color/colorAccent"
+                                android:layout_height="wrap_content"/>
+
+                            <TextView
+                                android:id="@+id/creation_country"
+                                android:layout_width="wrap_content"
+                                android:text="India"
+                                android:textSize="13sp"
+                                android:layout_height="wrap_content"/>
+
+                        </LinearLayout>
+
+
+                    </RelativeLayout>
+
+                </androidx.cardview.widget.CardView>
 
             </LinearLayout>
 

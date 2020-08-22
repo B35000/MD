@@ -7,6 +7,7 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.util.Log
 import android.util.TypedValue
 import androidx.appcompat.app.AppCompatDelegate
 import com.google.gson.Gson
@@ -16,9 +17,16 @@ import java.io.Serializable
 class Constants {
     val vib_time: Long = 2
     val coll_users = "users"
-    val first_time_launch = "first_time_launch"
     val dark_mode = "dark_mode"
+    val first_time_launch = "first_time_launch"
     val unknown_email = "unknown_email"
+    val organisations = "organisations"
+    val country_organisations = "country_organisations"
+    val otp_codes = "otp_codes"
+    val code_instances = "code_instances"
+    val otp_expiration_time: Long = 1000*60
+    val my_organisations = "my_organisations"
+    val session_data = "session_data"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -27,6 +35,66 @@ class Constants {
         } else {
             vibrator.vibrate(vib_time)
         }
+    }
+
+    fun construct_elapsed_time(time: Long): String{
+        val a_year = 1000L*60L*60L*24L*365L
+        val a_month = 1000L*60L*60L*24L*30L
+        val a_week = 1000L*60L*60L*24L*7L
+        val a_day = 1000L*60L*60L*24L
+        val an_hour = 1000L*60L*60L
+        val a_minute = 1000L*60L
+        val a_second = 1000L
+
+        if(time>=a_year){
+            //time is greater than a year, we will parse the time in years
+            val time_in_years = (time.toDouble()/a_year.toDouble()).toInt()
+            var t = "yrs."
+            if(time_in_years==1) t = "yr."
+            return time_in_years.toString()+t
+        }
+        else if(time>=a_month){
+            //time is greater than a month, we will parse the time in months
+            val time_in_months = (time.toDouble()/a_month.toDouble()).toInt()
+            var t = "mo."
+            if(time_in_months==1) t = "mo."
+            return time_in_months.toString()+t
+        }
+        else if(time>=a_week){
+            //time is greater than a week, we will parse the time in week
+            val time_in_weeks = (time.toDouble()/a_week.toDouble()).toInt()
+            var t = "wks."
+            if(time_in_weeks==1) t = "wk."
+            return time_in_weeks.toString()+t
+        }
+        else if(time>=a_day){
+            //time is greater than a day, we will parse the time in day
+            val time_in_days = (time.toDouble()/a_day.toDouble()).toInt()
+            var t = "d."
+            if(time_in_days==1) t = "d."
+            return time_in_days.toString()+t
+        }
+        else if(time>=an_hour){
+            //time is greater than an hour, we will parse the time in hours
+            val time_in_hours = (time.toDouble()/an_hour.toDouble()).toInt()
+            var t = "hrs."
+            if(time_in_hours==1) t = "hr."
+            return time_in_hours.toString()+ t
+        }
+        else if(time>=a_minute){
+            //time is greater than a minute, we will parse the time in minutes
+            val time_in_minutes = (time.toDouble()/a_minute.toDouble()).toInt()
+            var t = "min."
+            if(time_in_minutes==1) t = "min."
+            return time_in_minutes.toString()+ t
+        }
+        else{
+            val time_in_seconds = (time.toDouble()/a_second.toDouble()).toInt()
+            var t = "sec."
+            if(time_in_seconds==1) t = "sec."
+            return time_in_seconds.toString()+t
+        }
+
     }
 
     inner class SharedPreferenceManager(val applicationContext: Context){
@@ -74,6 +142,15 @@ class Constants {
             pref.edit().putBoolean(dark_mode, is_dark_on).apply()
         }
 
+        fun store_current_data(data: String){
+            val pref: SharedPreferences = applicationContext.getSharedPreferences(session_data, Context.MODE_PRIVATE)
+            pref.edit().clear().putString(session_data, data).apply()
+        }
+
+        fun get_current_data(): String{
+            val pref: SharedPreferences = applicationContext.getSharedPreferences(session_data, Context.MODE_PRIVATE)
+            return pref.getString(session_data,"")!!
+        }
 
     }
 
@@ -115,6 +192,8 @@ class Constants {
         val r: Resources = context.getResources()
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dip, r.getDisplayMetrics())
     }
+
+
 
 
 }

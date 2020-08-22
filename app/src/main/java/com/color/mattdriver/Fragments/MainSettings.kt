@@ -1,8 +1,6 @@
 package com.color.mattdriver.Fragments
 
-import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -10,20 +8,16 @@ import android.view.ViewGroup
 import android.widget.RelativeLayout
 import android.widget.Switch
 import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
 import com.color.mattdriver.Constants
 import com.color.mattdriver.R
 
 
-
-class Welcome : Fragment() {
+class MainSettings : Fragment() {
     // TODO: Rename and change types of parameters
     private var param1: String? = null
     private var param2: String? = null
     private val ARG_PARAM1 = "param1"
     private val ARG_PARAM2 = "param2"
-    private lateinit var listener: WelcomeInterface
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,51 +27,37 @@ class Welcome : Fragment() {
         }
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if(context is WelcomeInterface){
-            listener = context
-        }
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        val mView = inflater.inflate(R.layout.fragment_welcome, container, false)
+        val va = inflater.inflate(R.layout.fragment_main_settings, container, false)
+        val night_mode_switch: Switch = va.findViewById(R.id.night_mode_switch)
+        val dark_mode_text: TextView = va.findViewById(R.id.dark_mode_text)
 
-        val dark_mode_text: TextView = mView.findViewById(R.id.dark_mode_text)
-        val night_mode_switch: Switch = mView.findViewById(R.id.night_mode_switch)
-        val begin_layout = mView.findViewById<RelativeLayout>(R.id.begin_layout)
-        val money: RelativeLayout = mView.findViewById(R.id.money)
-
+        val money: RelativeLayout = va.findViewById(R.id.money)
         money.setOnTouchListener { v, event -> true }
 
         if(Constants().SharedPreferenceManager(context!!).isDarkModeOn()){
-            dark_mode_text.text = getString(R.string.turn_off_dark_mode)
+            dark_mode_text.text = "Turn off Dark Mode"
         }
         night_mode_switch.isChecked = Constants().SharedPreferenceManager(context!!).isDarkModeOn()
 
         night_mode_switch.setOnCheckedChangeListener { buttonView, isChecked ->
             Constants().dark_mode(context!!)
-            if(isChecked) dark_mode_text.text = getString(R.string.turn_off_dark_mode)
-            else dark_mode_text.text = getString(R.string.turn_on_dark_mode)
+            if(isChecked) dark_mode_text.text = "Turn off Dark Mode"
+            else dark_mode_text.text = "Turn on Dark Mode"
         }
 
-        begin_layout.setOnClickListener{
-            listener.OnContinueSelected()
-            Constants().touch_vibrate(context)
-        }
-
-        return mView
+        return va
     }
 
     companion object {
 
         @JvmStatic
         fun newInstance(param1: String, param2: String) =
-            Welcome().apply {
+            MainSettings().apply {
                 arguments = Bundle().apply {
                     putString(ARG_PARAM1, param1)
                     putString(ARG_PARAM2, param2)
@@ -85,8 +65,9 @@ class Welcome : Fragment() {
             }
     }
 
-    interface WelcomeInterface{
-        fun OnContinueSelected()
+
+    interface mainSettingsInterface{
+        fun onSettingsSwitchNightMode()
     }
 
 }

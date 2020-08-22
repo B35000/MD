@@ -14,4 +14,7 @@
     <string name="View">View</string>
     <string name="you_need_to_join_an_organisation_to_pick_a_route_to_work_with">You need to join an organisation to pick a route to work with</string>
     <string name="join_organisation">Join Organisation.</string>
+    <string name="say_something">Say something!</string>
+    <string name="that_didnt_work">That didn\'t work!</string>
+    <string name="you_can_create_and_edit_new_routes_and_add_new_drivers_from_here">You can create and edit new routes and add new drivers from here.</string>
 </resources>
