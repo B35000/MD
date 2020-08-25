@@ -76,10 +76,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_marginTop="5dp"
-                        android:textSize="14sp"
+                        android:textSize="16sp"
                         android:textColor="@color/colorAccent"
                         android:layout_height="wrap_content"
-                        android:text="Create a new Route." />
+                        android:text="Create Route." />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -142,10 +142,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_marginTop="5dp"
-                        android:textSize="14sp"
+                        android:textSize="16sp"
                         android:textColor="@color/colorAccent"
                         android:layout_height="wrap_content"
-                        android:text="Generate password for new driver" />
+                        android:text="Generate password" />
 
                     <TextView
                         android:layout_width="wrap_content"

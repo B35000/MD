@@ -17,11 +17,85 @@
             android:orientation="vertical"
             android:layout_height="match_parent">
 
-            <fragment
-                android:id="@+id/map"
-                android:name="com.google.android.gms.maps.SupportMapFragment"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"/>
+                android:layout_height="match_parent">
+
+                <fragment
+                    android:id="@+id/map"
+                    android:name="com.google.android.gms.maps.SupportMapFragment"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+
+                <ImageView
+                    android:id="@+id/set_location_pin"
+                    android:visibility="gone"
+                    android:layout_width="30dp"
+                    android:layout_centerInParent="true"
+                    android:translationY="-25dp"
+                    android:background="@drawable/location_pin"
+                    android:layout_height="50dp"/>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/search_place"
+                    android:layout_width="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentBottom="true"
+                    android:visibility="gone"
+                    android:layout_marginBottom="110dp"
+                    android:layout_marginEnd="10dp"
+                    app:cardBackgroundColor="@color/card_back"
+                    app:cardCornerRadius="18dp"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_marginVertical="5dp"
+                        android:layout_marginHorizontal="5dp"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:layout_width="35dp"
+                            android:scaleY="0.7"
+                            android:scaleX="0.7"
+                            android:src="@drawable/search_location"
+                            android:layout_height="35dp"/>
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/finish_create_route"
+                    android:layout_width="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentBottom="true"
+                    android:visibility="gone"
+                    android:layout_marginBottom="160dp"
+                    android:layout_marginEnd="10dp"
+                    app:cardBackgroundColor="@color/card_back"
+                    app:cardCornerRadius="18dp"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_marginVertical="5dp"
+                        android:layout_marginHorizontal="5dp"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:layout_width="35dp"
+                            android:scaleY="0.7"
+                            android:scaleX="0.7"
+                            android:src="@drawable/check_icon"
+                            android:layout_height="35dp"/>
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </RelativeLayout>
+
 
             <RelativeLayout
                 android:id="@+id/bottom_sheet_layout"
@@ -213,9 +287,345 @@
         </RelativeLayout>
 
         <RelativeLayout
+            android:id="@+id/new_route_view"
             android:layout_width="match_parent"
+            android:background="@color/window_background"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="15dp"
+            android:visibility="gone"
+            android:paddingBottom="15dp"
             android:layout_height="wrap_content">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:orientation="vertical"
+                android:layout_height="wrap_content">
+
+                <RelativeLayout
+                    android:visibility="gone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:textSize="23sp"
+                        android:textColor="@color/colorAccent"
+                        android:layout_height="wrap_content"
+                        android:text="New Route." />
+
+                    <LinearLayout
+                        android:id="@+id/finish_layout"
+                        android:layout_width="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_centerVertical="true"
+                        android:layout_alignParentEnd="true"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:textSize="17sp"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@color/colorPrimary"
+                            android:layout_height="wrap_content"
+                            android:text="Finish" />
+
+
+                        <ImageView
+                            android:layout_width="15dp"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="5dp"
+                            android:translationY="1dp"
+                            android:src="@drawable/next_arrow"
+                            android:layout_height="12dp"/>
+
+                    </LinearLayout>
+
+                </RelativeLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:textSize="15sp"
+                    android:visibility="gone"
+                    android:layout_height="wrap_content"
+                    android:text="Drag the map under the pin when setting a location" />
+
+                <!--starting location part-->
+                <RelativeLayout
+                    android:id="@+id/starting_location_part"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="10dp"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:orientation="horizontal"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:id="@+id/starting_location_pin"
+                            android:layout_width="10dp"
+                            android:layout_marginTop="2dp"
+                            android:src="@drawable/starting_location_pin"
+                            android:layout_height="25dp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:orientation="vertical"
+                            android:layout_marginStart="10dp"
+                            android:layout_height="wrap_content">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:orientation="horizontal"
+                                android:layout_height="wrap_content">
+
+                                <ProgressBar
+                                    android:id="@+id/start_location_progressbar"
+                                    style="?android:attr/progressBarStyle"
+                                    android:visibility="gone"
+                                    android:layout_gravity="center_vertical"
+                                    android:layout_width="15dp"
+                                    android:layout_height="15dp"/>
+
+                                <TextView
+                                    android:id="@+id/start_location_description"
+                                    android:layout_width="match_parent"
+                                    android:text="From: "
+                                    android:layout_marginStart="5dp"
+                                    android:textSize="14sp"
+                                    android:layout_marginEnd="120dp"
+                                    android:layout_height="wrap_content"/>
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/set_starting_layout"
+                        android:layout_width="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_alignParentEnd="true"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/set_start_location_textview"
+                            android:layout_width="wrap_content"
+                            android:textSize="13sp"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@color/colorPrimary"
+                            android:layout_height="wrap_content"
+                            android:text="@string/set_location" />
+
+
+                        <ImageView
+                            android:id="@+id/set_start_location_icon"
+                            android:layout_width="15dp"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="5dp"
+                            android:translationY="1dp"
+                            android:src="@drawable/down_arrow"
+                            android:layout_height="14dp"/>
+
+                    </LinearLayout>
+
+                </RelativeLayout>
+
+                <!--ending location part-->
+                <RelativeLayout
+                    android:id="@+id/ending_location_part"
+                    android:visibility="gone"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="20dp"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:orientation="horizontal"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:id="@+id/ending_location_pin"
+                            android:layout_width="10dp"
+                            android:layout_marginTop="2dp"
+                            android:src="@drawable/ending_location_pin"
+                            android:layout_height="25dp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:orientation="vertical"
+                            android:layout_marginStart="10dp"
+                            android:layout_height="wrap_content">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:orientation="horizontal"
+                                android:layout_height="wrap_content">
+
+                                <ProgressBar
+                                    android:id="@+id/end_location_progressbar"
+                                    style="?android:attr/progressBarStyle"
+                                    android:visibility="gone"
+                                    android:layout_gravity="center_vertical"
+                                    android:layout_width="15dp"
+                                    android:layout_height="15dp"/>
+
+                                <TextView
+                                    android:id="@+id/end_location_description"
+                                    android:layout_width="match_parent"
+                                    android:text="To: "
+                                    android:textSize="14sp"
+                                    android:layout_marginStart="5dp"
+                                    android:layout_marginEnd="120dp"
+                                    android:layout_height="wrap_content"/>
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/set_ending_layout"
+                        android:layout_width="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_alignParentEnd="true"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/set_end_location_textview"
+                            android:layout_width="wrap_content"
+                            android:textSize="13sp"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@color/colorPrimary"
+                            android:layout_height="wrap_content"
+                            android:text="@string/set_location" />
+
+
+                        <ImageView
+                            android:id="@+id/set_end_location_icon"
+                            android:layout_width="15dp"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="5dp"
+                            android:translationY="1dp"
+                            android:src="@drawable/down_arrow"
+                            android:layout_height="14dp"/>
+
+                    </LinearLayout>
+
+                </RelativeLayout>
+
+                <!--stops location part-->
+                <RelativeLayout
+                    android:id="@+id/stops_location_part"
+                    android:visibility="gone"
+                    android:layout_width="match_parent"
+                    android:layout_marginTop="20dp"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:orientation="horizontal"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:id="@+id/stop_location_pin"
+                            android:layout_width="10dp"
+                            android:layout_marginTop="2dp"
+                            android:src="@drawable/stop_location_pin"
+                            android:layout_height="25dp"/>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:orientation="vertical"
+                            android:layout_marginStart="10dp"
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:id="@+id/bus_stops_textview"
+                                android:layout_width="match_parent"
+                                android:text="Bus stops."
+                                android:textSize="14sp"
+                                android:layout_marginEnd="110dp"
+                                android:layout_height="wrap_content"/>
+
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_marginTop="20dp"
+                                android:layout_height="wrap_content">
+
+                                <androidx.recyclerview.widget.RecyclerView
+                                    android:id="@+id/route_stops_recyclerview"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"/>
+
+                                <LinearLayout
+                                    android:id="@+id/create_route_layout"
+                                    android:layout_width="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:layout_centerVertical="true"
+                                    android:visibility="gone"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_height="wrap_content">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:textSize="13sp"
+                                        android:layout_gravity="center_vertical"
+                                        android:textColor="@color/colorPrimary"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/create_route" />
+
+
+                                    <ImageView
+                                        android:layout_width="15dp"
+                                        android:layout_gravity="center_vertical"
+                                        android:layout_marginStart="5dp"
+                                        android:translationY="1dp"
+                                        android:src="@drawable/down_arrow"
+                                        android:layout_height="14dp"/>
+
+                                </LinearLayout>
+
+                            </RelativeLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/add_stop_layout"
+                        android:layout_width="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_alignParentEnd="true"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/set_bus_stop_textview"
+                            android:layout_width="wrap_content"
+                            android:textSize="13sp"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@color/colorPrimary"
+                            android:layout_height="wrap_content"
+                            android:text="@string/add_a_stop" />
+
+
+                        <ImageView
+                            android:id="@+id/add_route_icon"
+                            android:layout_width="15dp"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="5dp"
+                            android:translationY="1dp"
+                            android:src="@drawable/add_icon"
+                            android:layout_height="14dp"/>
+
+                    </LinearLayout>
+
+                </RelativeLayout>
+
+            </LinearLayout>
 
         </RelativeLayout>
 

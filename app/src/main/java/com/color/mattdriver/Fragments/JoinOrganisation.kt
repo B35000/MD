@@ -64,8 +64,10 @@ class JoinOrganisation : Fragment() {
         val create_layout: RelativeLayout = va.findViewById(R.id.create_layout)
         val organisation_recyclerview: RecyclerView = va.findViewById(R.id.organisation_recyclerview)
         val no_orgs_layout: RelativeLayout = va.findViewById(R.id.no_orgs_layout)
+
         val money: RelativeLayout = va.findViewById(R.id.money)
         money.setOnTouchListener { v, event -> true }
+
         val swipeContainer = va.findViewById<SwipeRefreshLayout>(R.id.swipeContainer)
 
         swipeContainer.setColorSchemeResources(

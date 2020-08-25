@@ -17,4 +17,9 @@
     <string name="say_something">Say something!</string>
     <string name="that_didnt_work">That didn\'t work!</string>
     <string name="you_can_create_and_edit_new_routes_and_add_new_drivers_from_here">You can create and edit new routes and add new drivers from here.</string>
+    <string name="done">Done</string>
+    <string name="set_location">Set location</string>
+    <string name="create_route">Draw route</string>
+    <string name="add_a_stop">Add stop</string>
+    <string name="edit_stop">Edit stop</string>
 </resources>

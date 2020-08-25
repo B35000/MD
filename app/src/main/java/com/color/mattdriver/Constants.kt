@@ -27,6 +27,11 @@ class Constants {
     val otp_expiration_time: Long = 1000*60
     val my_organisations = "my_organisations"
     val session_data = "session_data"
+    val start_loc = "start_loc"
+    val end_loc = "end_loc"
+    val stop_loc = "stop_loc"
+    val routes = "routes"
+    val country_routes = "country_routes"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator

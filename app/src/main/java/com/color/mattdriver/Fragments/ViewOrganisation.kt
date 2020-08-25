@@ -16,7 +16,6 @@ import com.color.mattdriver.Models.organisation
 import com.color.mattdriver.Models.route
 import com.color.mattdriver.R
 import com.google.gson.Gson
-import org.w3c.dom.Text
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -43,6 +42,8 @@ class ViewOrganisation : Fragment() {
 
     var isPasscodeSet: () -> Unit = {}
 
+    var when_route_data_updated: (routes: ArrayList<route>) -> Unit = {}
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if(context is viewOrganisationInterface){
@@ -67,7 +68,6 @@ class ViewOrganisation : Fragment() {
         val money: RelativeLayout = va.findViewById(R.id.money)
 
         money.setOnTouchListener { v, event -> true }
-
 
         passcode_layout.visibility = View.VISIBLE
         new_route_layout.visibility = View.VISIBLE
@@ -99,6 +99,13 @@ class ViewOrganisation : Fragment() {
             }, Constants().otp_expiration_time)
         }
 
+        when_route_data_updated = {
+            routes = it
+
+            created_routes_recyclerview.adapter = RoutesListAdapter()
+            created_routes_recyclerview.layoutManager = LinearLayoutManager(context)
+        }
+
         return va
     }
 
@@ -115,8 +122,8 @@ class ViewOrganisation : Fragment() {
 
             val t_diff = Calendar.getInstance().timeInMillis-route.creation_time
             v.creation_time.text = "Created ${Constants().construct_elapsed_time(t_diff)} ago."
-            v.source_text.text = route.source
-            v.destination_text.text = route.destination
+            v.source_text.text = route.starting_pos_desc
+            v.destination_text.text = route.ending_pos_desc
 
             v.edit_layout.setOnClickListener {
                 Constants().touch_vibrate(context)

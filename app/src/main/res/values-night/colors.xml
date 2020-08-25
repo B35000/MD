@@ -13,6 +13,11 @@
     <color name="card_back">#3C3C3C</color>
     <color name="hint_color">#808893</color>
 
+    <color name="new_loc_back">#919295</color>
+    <color name="new_loc_back_selected">#393E46</color>
+    <color name="new_loc_text_color">#FFFFFF</color>
+    <color name="route_color">#409528</color>
+
     <color name="white">#FFFFFF</color>
     <color name="black">#121212</color>
     <color name="red">#C60000</color>
