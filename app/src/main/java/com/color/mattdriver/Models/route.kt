@@ -20,4 +20,5 @@ class route(var creation_time: Long,var org_id: String) {
     var creater: String = ""
     var country: String = ""
 
+    class route_list(var routes: ArrayList<route>)
 }

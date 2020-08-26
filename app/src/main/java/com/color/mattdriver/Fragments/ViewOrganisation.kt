@@ -26,6 +26,7 @@ class ViewOrganisation : Fragment() {
     private var param2: String? = null
     private val ARG_PARAM1 = "param1"
     private val ARG_PARAM2 = "param2"
+    private val ARG_ROUTES = "ARG_ROUTES"
     private val ARG_ORGANISATION = "ARG_ORGANISATION"
     private lateinit var listener: viewOrganisationInterface
     private var routes: ArrayList<route> = ArrayList()
@@ -37,6 +38,7 @@ class ViewOrganisation : Fragment() {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
             organ = Gson().fromJson(it.getString(ARG_ORGANISATION),organisation::class.java)
+            routes = Gson().fromJson(it.getString(ARG_ROUTES), route.route_list::class.java).routes
         }
     }
 
@@ -125,9 +127,9 @@ class ViewOrganisation : Fragment() {
             v.source_text.text = route.starting_pos_desc
             v.destination_text.text = route.ending_pos_desc
 
-            v.edit_layout.setOnClickListener {
+            v.view_layout.setOnClickListener {
                 Constants().touch_vibrate(context)
-
+                listener.viewRoute(route,organ)
             }
         }
 
@@ -138,7 +140,7 @@ class ViewOrganisation : Fragment() {
     }
 
     internal inner class ViewHolderRoutes (view: View) : RecyclerView.ViewHolder(view) {
-        val edit_layout: RelativeLayout = view.findViewById(R.id.edit_layout)
+        val view_layout: RelativeLayout = view.findViewById(R.id.view_layout)
         val creation_time: TextView = view.findViewById(R.id.creation_time)
         val source_text: TextView = view.findViewById(R.id.source_text)
         val destination_text: TextView = view.findViewById(R.id.destination_text)
@@ -147,12 +149,13 @@ class ViewOrganisation : Fragment() {
     companion object {
 
         @JvmStatic
-        fun newInstance(param1: String, param2: String, organisation: String) =
+        fun newInstance(param1: String, param2: String, organisation: String, routes: String) =
             ViewOrganisation().apply {
                 arguments = Bundle().apply {
                     putString(ARG_PARAM1, param1)
                     putString(ARG_PARAM2, param2)
                     putString(ARG_ORGANISATION, organisation)
+                    putString(ARG_ROUTES, routes)
                 }
             }
     }
@@ -161,6 +164,7 @@ class ViewOrganisation : Fragment() {
     interface viewOrganisationInterface{
         fun createNewRouteClicked(organisation: organisation)
         fun generatePasscodeClicked(organisation: organisation, code: Long)
+        fun viewRoute(route:route, organisation: organisation)
     }
 
 }

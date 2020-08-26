@@ -66,7 +66,9 @@ class MapsActivity : AppCompatActivity(),
     OrganisationPasscode.OrganisationPasscodeInterface,
     ViewOrganisation.viewOrganisationInterface,
     GoogleMap.OnMyLocationClickListener,
-    GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMarkerClickListener {
+    GoogleMap.OnMyLocationButtonClickListener,
+    GoogleMap.OnMarkerClickListener
+{
     val TAG = "MapsActivity"
     val _welcome = "_welcome"
     val _join_organisation = "_join_organisation"
@@ -89,6 +91,7 @@ class MapsActivity : AppCompatActivity(),
     val db = Firebase.firestore
     var organisations: ArrayList<organisation> = ArrayList()
     var my_organisations: ArrayList<String> = ArrayList()
+    var active_organisation = ""
     var routes: ArrayList<route> = ArrayList()
 
     var mapView: View? = null
@@ -115,6 +118,7 @@ class MapsActivity : AppCompatActivity(),
     var route_directions_data: directions_data? = null
 
     var AUTOCOMPLETE_REQUEST_CODE = 1
+    var viewing_route: route? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -208,7 +212,9 @@ class MapsActivity : AppCompatActivity(),
     }
 
     fun removing_fragment_notifier(tag: String){
-
+        if(tag.equals(_view_organisation)){
+            viewing_route = null
+        }
     }
 
 
@@ -497,8 +503,9 @@ class MapsActivity : AppCompatActivity(),
         if(my_organisations.contains(organisation.org_id)){
             //im a part of this
             var org_string = Gson().toJson(organisation)
+            var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(organisation)))
             supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                .add(binding.money.id,ViewOrganisation.newInstance("","",org_string),_view_organisation).commit()
+                .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string),_view_organisation).commit()
 
         }else{
             val org = Gson().toJson(organisation)
@@ -539,8 +546,10 @@ class MapsActivity : AppCompatActivity(),
 
             my_organisations.add(new_org.org_id!!)
             var org_string = Gson().toJson(new_org)
+            var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(new_org)))
             supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                .add(binding.money.id,ViewOrganisation.newInstance("","",org_string),_view_organisation).commit()
+                .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,
+                    route_string),_view_organisation).commit()
         }
 
 
@@ -586,8 +595,9 @@ class MapsActivity : AppCompatActivity(),
                         //if password is right
                         my_organisations.add(organisation.org_id!!)
                         var org_string = Gson().toJson(organisation)
+                        var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(organisation)))
                         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                            .add(binding.money.id,ViewOrganisation.newInstance("","",org_string),_view_organisation).commit()
+                            .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string),_view_organisation).commit()
 
                         if(!!constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!.email
                                 .equals(constants.unknown_email)) {
@@ -602,7 +612,7 @@ class MapsActivity : AppCompatActivity(),
                                         "creation_time" to organisation.creation_time
                                     ))
                         }
-
+                        active_organisation = organisation.org_id!!
                     }else{
                         //if password is wrong
                         if(supportFragmentManager.findFragmentByTag(_organisation_passcode)!=null){
@@ -642,10 +652,21 @@ class MapsActivity : AppCompatActivity(),
 
     }
 
+    override fun viewRoute(route: route, organisation: organisation) {
+        var org_string = Gson().toJson(organisation)
+        var route_string = Gson().toJson(route)
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string),_view_organisation).commit()
+
+
+//        viewing_route = route
+//        load_my_route(route)
+//        openRouteCreater(organisation)
+    }
 
 
     fun store_session_data(){
-        val session = Gson().toJson(session_data(organisations, my_organisations, routes))
+        val session = Gson().toJson(session_data(organisations,active_organisation, my_organisations, routes))
         constants.SharedPreferenceManager(applicationContext).store_current_data(session)
     }
 
@@ -657,10 +678,11 @@ class MapsActivity : AppCompatActivity(),
             organisations = session_obj.organisations
             my_organisations = session_obj.my_organisations
             routes = session_obj.routes
+            active_organisation = session_obj.active_organisation
         }
     }
 
-    class session_data(var organisations: ArrayList<organisation>,
+    class session_data(var organisations: ArrayList<organisation>,var active_organisation: String,
                        var my_organisations: ArrayList<String>,var routes: ArrayList<route>): Serializable
 
 
@@ -883,9 +905,24 @@ class MapsActivity : AppCompatActivity(),
 
         binding.finishCreateRoute.setOnClickListener {
             constants.touch_vibrate(applicationContext)
-            create_route(organisation)
+            if(viewing_route!=null){
+                update_route(viewing_route!!,organisation)
+            }else{
+                create_route(organisation)
+            }
         }
 
+        if(set_start_pos!=null){
+            binding.endingLocationPart.visibility = View.VISIBLE
+        }
+
+        if(set_end_pos!=null){
+            binding.stopsLocationPart.visibility = View.VISIBLE
+        }
+
+        if(set_end_pos!=null && set_start_pos!=null){
+            binding.finishCreateRoute.visibility = View.VISIBLE
+        }
     }
 
     var is_location_picker_open = false
@@ -1207,7 +1244,7 @@ class MapsActivity : AppCompatActivity(),
             val op = PolylineOptions()
                 .addAll(entire_paths[i])
                 .width(3f)
-                .color(Color.RED)
+                .color(applicationContext.getResources().getColor(R.color.route_color))
             drawn_polyline.add(mMap.addPolyline(op))
         }
 
@@ -1271,7 +1308,6 @@ class MapsActivity : AppCompatActivity(),
         new_route.country = organisation.country!!
         new_route.route_id = route_ref.id
 
-
         val data = hashMapOf(
             "organisation_id" to organisation.org_id,
             "route" to Gson().toJson(new_route),
@@ -1286,7 +1322,7 @@ class MapsActivity : AppCompatActivity(),
             routes.add(new_route)
             if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
                 (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
-                    .when_route_data_updated(routes)
+                    .when_route_data_updated(load_my_organisations_routes(organisation))
             }
 
             //remove all the markers on the map
@@ -1295,10 +1331,184 @@ class MapsActivity : AppCompatActivity(),
             }
             //remove the drawn route
             remove_drawn_route()
+            onBackPressed()
+            Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
         }
 
 
     }
 
+    fun update_route(route: route, organisation: organisation){
+        showLoadingScreen()
+
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        val route_ref = db.collection(constants.organisations)
+            .document(organisation.country!!)
+            .collection(constants.country_routes)
+            .document(organisation.org_id!!)
+            .collection(constants.routes)
+            .document(route.route_id)
+
+        route.starting_pos_desc = set_start_pos_desc
+        route.ending_pos_desc = set_end_pos_desc
+
+        route.set_start_pos = set_start_pos
+        route.set_end_pos = set_end_pos
+
+        route.start_pos_geo_data = start_pos_geo_data
+        route.end_pos_geo_data = end_pos_geo_data
+
+        route.added_bus_stops = added_bus_stops
+        route.route_directions_data = route_directions_data
+
+        route.creater = uid
+        route.country = organisation.country!!
+        route.route_id = route_ref.id
+
+        val data = hashMapOf(
+            "organisation_id" to organisation.org_id,
+            "route" to Gson().toJson(route),
+            "country" to organisation.country,
+            "route_id" to route.route_id,
+            "creation_time" to route.creation_time,
+            "creater" to uid
+        )
+
+        route_ref.update(data).addOnSuccessListener {
+            hideLoadingScreen()
+            var pos = -1
+            for(item in routes){
+                if(item.route_id.equals(route.route_id)){
+                    pos = routes.indexOf(item)
+                }
+            }
+            if(pos!=-1){
+                routes.removeAt(pos)
+                routes.add(route)
+            }
+            if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                    .when_route_data_updated(load_my_organisations_routes(organisation))
+            }
+
+            //remove all the markers on the map
+            for(item in added_markers.values){
+                item.remove()
+            }
+            //remove the drawn route
+            remove_drawn_route()
+            onBackPressed()
+            Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
+        }
+
+    }
+
+    fun remove_route(route: route, organisation: organisation){
+        showLoadingScreen()
+
+        val route_ref = db.collection(constants.organisations)
+            .document(organisation.country!!)
+            .collection(constants.country_routes)
+            .document(organisation.org_id!!)
+            .collection(constants.routes)
+            .document(route.route_id)
+
+        route_ref.delete().addOnSuccessListener {
+            hideLoadingScreen()
+            var pos = -1
+            for(item in routes){
+                if(item.route_id.equals(route.route_id)){
+                    pos = routes.indexOf(item)
+                }
+            }
+            if(pos!=-1){
+                routes.removeAt(pos)
+            }
+            if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                    .when_route_data_updated(load_my_organisations_routes(organisation))
+            }
+
+            //remove all the markers on the map
+            for(item in added_markers.values){
+                item.remove()
+            }
+            //remove the drawn route
+            remove_drawn_route()
+            onBackPressed()
+            Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun load_my_route(route: route){
+        binding.startingLocationPart.visibility = View.VISIBLE
+        binding.endingLocationPart.visibility = View.VISIBLE
+        binding.stopsLocationPart.visibility = View.VISIBLE
+        binding.finishCreateRoute.visibility = View.VISIBLE
+
+        set_start_pos = route.set_start_pos
+        set_start_pos_desc = route.starting_pos_desc
+
+        var selectedString = ""
+        var selected_location_id = ""
+        for (result in route.start_pos_geo_data!!.results){
+            val area_name = result.formatted_address
+            if(area_name.length>selectedString.length){
+                selected_location_id = result.place_id
+            }
+        }
+
+        set_start_pos_id = selected_location_id
+        start_pos_geo_data = route.start_pos_geo_data
+
+        set_end_pos = route.set_end_pos
+        set_end_pos_desc = route.ending_pos_desc
+
+        selectedString = ""
+        selected_location_id = ""
+        for (result in route.end_pos_geo_data!!.results){
+            val area_name = result.formatted_address
+            if(area_name.length>selectedString.length){
+                selected_location_id = result.place_id
+            }
+        }
+
+        set_end_pos_id = selected_location_id
+        end_pos_geo_data = route.end_pos_geo_data
+        added_bus_stops = route.added_bus_stops
+        route_directions_data = route.route_directions_data
+
+        val entire_path: MutableList<List<LatLng>> = ArrayList()
+        if(route_directions_data!!.routes.isNotEmpty()){
+            val route = route_directions_data!!.routes[0]
+            for(leg in route.legs){
+                Log.e(TAG, "leg start adress: ${leg.start_address}")
+                for(step in leg.steps){
+                    Log.e(TAG,"step maneuver: ${step.maneuver}")
+                    val pathh: List<LatLng> = PolyUtil.decode(step.polyline.points)
+                    entire_path.add(pathh)
+                }
+            }
+        }
+
+        draw_route(entire_path)
+        add_marker(set_start_pos!!,constants.start_loc, constants.start_loc)
+        add_marker(set_end_pos!!,constants.end_loc, constants.end_loc)
+        for(item in added_bus_stops){
+            add_marker(item.stop_location,constants.stop_loc, constants.stop_loc)
+        }
+
+    }
+
+    fun load_my_organisations_routes(organisation: organisation): ArrayList<route>{
+        val my_routes: ArrayList<route> = ArrayList()
+        for(item in routes){
+            if(item.org_id.equals(organisation.org_id)){
+                my_routes.add(item)
+            }
+        }
+
+        return my_routes
+    }
 
 }
