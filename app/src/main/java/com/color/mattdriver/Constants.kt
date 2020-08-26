@@ -33,6 +33,7 @@ class Constants {
     val stop_loc = "stop_loc"
     val routes = "routes"
     val country_routes = "country_routes"
+    val distance_threshold = 69
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator

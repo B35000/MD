@@ -1,5 +1,6 @@
 package com.color.mattdriver.Fragments
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -18,12 +19,20 @@ class MainSettings : Fragment() {
     private var param2: String? = null
     private val ARG_PARAM1 = "param1"
     private val ARG_PARAM2 = "param2"
+    lateinit var listener: MainSettingsInterface
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
+        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if(context is MainSettingsInterface){
+            listener = context
         }
     }
 
@@ -35,6 +44,7 @@ class MainSettings : Fragment() {
         val va = inflater.inflate(R.layout.fragment_main_settings, container, false)
         val night_mode_switch: Switch = va.findViewById(R.id.night_mode_switch)
         val dark_mode_text: TextView = va.findViewById(R.id.dark_mode_text)
+        val join_organisation_layout: RelativeLayout = va.findViewById(R.id.join_organisation_layout)
 
         val money: RelativeLayout = va.findViewById(R.id.money)
         money.setOnTouchListener { v, event -> true }
@@ -48,6 +58,11 @@ class MainSettings : Fragment() {
             Constants().dark_mode(context!!)
             if(isChecked) dark_mode_text.text = "Turn off Dark Mode"
             else dark_mode_text.text = "Turn on Dark Mode"
+        }
+
+        join_organisation_layout.setOnClickListener {
+            listener.onSettingsChangeOrganisation()
+            Constants().dark_mode(context!!)
         }
 
         return va
@@ -66,8 +81,9 @@ class MainSettings : Fragment() {
     }
 
 
-    interface mainSettingsInterface{
+    interface MainSettingsInterface{
         fun onSettingsSwitchNightMode()
+        fun onSettingsChangeOrganisation()
     }
 
 }

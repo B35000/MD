@@ -67,7 +67,7 @@ class ViewOrganisation : Fragment() {
         // Inflate the layout for this fragment
         val va = inflater.inflate(R.layout.fragment_view_organisation, container, false)
         val title: TextView = va.findViewById(R.id.title)
-        val no_of_drivers: TextView = va.findViewById(R.id.no_of_drivers)
+        val join_organisation_layout: RelativeLayout = va.findViewById(R.id.join_organisation_layout)
         val new_route_layout: RelativeLayout = va.findViewById(R.id.new_route_layout)
         val create_route_layout: RelativeLayout = va.findViewById(R.id.create_route_layout)
         val new_code: TextView = va.findViewById(R.id.new_code)
@@ -157,6 +157,11 @@ class ViewOrganisation : Fragment() {
             when_route_picked(set_route)
         }
 
+        join_organisation_layout.setOnClickListener{
+            Constants().touch_vibrate(context)
+            listener.onChangeOrganisation()
+        }
+
         return va
     }
 
@@ -173,7 +178,7 @@ class ViewOrganisation : Fragment() {
             if(route.route_id.equals(set_route)){
                 v.root_cardview.visibility = View.GONE
             }
-            v.creation_time.text = "Created: ${Constants().get_formatted_time(route.creation_time)}"
+            v.creation_time.text = "${Constants().get_formatted_time(route.creation_time)}"
             v.source_text.text = route.starting_pos_desc
             v.destination_text.text = route.ending_pos_desc
 
@@ -218,6 +223,7 @@ class ViewOrganisation : Fragment() {
         fun generatePasscodeClicked(organisation: organisation, code: Long)
         fun viewRoute(route:route, organisation: organisation)
         fun whenReloadRoutes()
+        fun onChangeOrganisation()
     }
 
 }

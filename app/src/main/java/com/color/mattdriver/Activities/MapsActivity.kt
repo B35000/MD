@@ -68,7 +68,8 @@ class MapsActivity : AppCompatActivity(),
     GoogleMap.OnMyLocationClickListener,
     GoogleMap.OnMyLocationButtonClickListener,
     GoogleMap.OnMarkerClickListener,
-    ViewRoute.ViewRouteInterface
+    ViewRoute.ViewRouteInterface,
+    MainSettings.MainSettingsInterface
 {
     val TAG = "MapsActivity"
     val _welcome = "_welcome"
@@ -122,6 +123,8 @@ class MapsActivity : AppCompatActivity(),
 
     var AUTOCOMPLETE_REQUEST_CODE = 1
     var viewing_route: route? = null
+    var my_marker: Marker? = null
+    var my_marker_trailing_markers: ArrayList<Circle> = ArrayList()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -199,6 +202,7 @@ class MapsActivity : AppCompatActivity(),
 
         when_active_org_set()
         when_active_route_set()
+
     }
 
     fun open_welcome_fragment(){
@@ -531,11 +535,13 @@ class MapsActivity : AppCompatActivity(),
     override fun joinOrganisation(organisation: organisation) {
         if(my_organisations.contains(organisation.org_id)){
             //im a part of this
+            remove_active_route_on_map()
+            active_route = ""
+            when_active_org_set()
             var org_string = Gson().toJson(organisation)
             var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(organisation)))
             supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
                 .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string,active_route),_view_organisation).commit()
-
         }else{
             val org = Gson().toJson(organisation)
             supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
@@ -624,6 +630,9 @@ class MapsActivity : AppCompatActivity(),
                     }
                     if(does_code_work){
                         //if password is right
+                        remove_active_route_on_map()
+                        active_route = ""
+
                         my_organisations.add(organisation.org_id!!)
                         var org_string = Gson().toJson(organisation)
                         var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(organisation)))
@@ -697,6 +706,12 @@ class MapsActivity : AppCompatActivity(),
 
     override fun whenReloadRoutes() {
         load_routes()
+    }
+
+    override fun onChangeOrganisation() {
+        val orgs = Gson().toJson(organisation.organisation_list(organisations))
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .replace(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
     }
 
 
@@ -776,6 +791,8 @@ class MapsActivity : AppCompatActivity(),
             val intent: Intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields).build(this)
             startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE)
         }
+
+        load_active_route_on_map()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -974,6 +991,9 @@ class MapsActivity : AppCompatActivity(),
 
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(mMap.cameraPosition.target, ZOOM_FOCUSED))
         binding.finishCreateRoute.visibility = View.GONE
+
+        can_update_my_location = false
+        remove_my_location_on_map()
     }
 
     fun close_location_picker(){
@@ -986,6 +1006,7 @@ class MapsActivity : AppCompatActivity(),
         if(set_start_pos!=null && set_end_pos!=null){
             binding.finishCreateRoute.visibility = View.VISIBLE
         }
+        load_my_location_on_map()
     }
 
     override fun onMyLocationButtonClick(): Boolean {
@@ -1149,6 +1170,8 @@ class MapsActivity : AppCompatActivity(),
         binding.bottomSheetLayout.visibility = View.GONE
         binding.money.visibility = View.GONE
         binding.newRouteView.visibility = View.VISIBLE
+
+        remove_active_route_on_map()
     }
 
     fun show_normal_home_items(){
@@ -1156,6 +1179,8 @@ class MapsActivity : AppCompatActivity(),
         binding.bottomSheetLayout.visibility = View.VISIBLE
         binding.money.visibility = View.VISIBLE
         binding.newRouteView.visibility = View.GONE
+
+        load_active_route_on_map()
     }
 
     override fun onMyLocationClick(p0: Location) {
@@ -1164,14 +1189,7 @@ class MapsActivity : AppCompatActivity(),
 
     fun when_location_gotten(){
         val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
-
-//        val circleOptions = CircleOptions()
-//        circleOptions.center(LatLng(last_loc.latitude,last_loc.longitude))
-//        circleOptions.radius(1.0)
-//        circleOptions.strokeColor(R.color.colorPrimary)
-//        circleOptions.fillColor(R.color.colorAccent)
-//        circleOptions.strokeWidth(1f)
-//        val circle = mMap.addCircle(circleOptions)
+        if(can_update_my_location)load_my_location_on_map()
     }
 
     fun getLocationDescription(lat_lng: LatLng, progress_view: ProgressBar, textview: TextView){
@@ -1295,6 +1313,13 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
+    fun remove_all_added_pins(){
+        for(item in added_markers.values){
+            item.remove()
+        }
+        added_markers.clear()
+    }
+
     fun when_location_marker_clicked(its_pos: LatLng){
         val new_lat_lng = LatLng(its_pos.latitude, its_pos.longitude)
         val zoom = mMap.cameraPosition.zoom
@@ -1312,6 +1337,7 @@ class MapsActivity : AppCompatActivity(),
         when_location_marker_clicked(p0!!.position)
         return true
     }
+
 
 
     fun create_route(organisation: organisation){
@@ -1365,6 +1391,7 @@ class MapsActivity : AppCompatActivity(),
             }
             //remove the drawn route
             remove_drawn_route()
+            binding.finishCreateRoute.visibility = View.GONE
             onBackPressed()
             Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
         }
@@ -1437,7 +1464,7 @@ class MapsActivity : AppCompatActivity(),
 
     }
 
-    fun remove_route(route: route, organisation: organisation){
+    fun delete_route(route: route, organisation: organisation){
         showLoadingScreen()
 
         val route_ref = db.collection(constants.organisations)
@@ -1556,6 +1583,7 @@ class MapsActivity : AppCompatActivity(),
             (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation).when_route_picked(active_route)
         }
         when_active_route_set()
+        load_active_route_on_map()
         Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
     }
 
@@ -1586,11 +1614,12 @@ class MapsActivity : AppCompatActivity(),
             binding.sharingLocationLayout.visibility = View.VISIBLE
             val active_route = get_active_route()!!
 
-            binding.title.text = "On Route"
+            binding.title.text = "Route"
             binding.destinationTextview.text = "To: ${active_route.ending_pos_desc}"
             store_session_data()
         }
     }
+
 
     fun when_active_org_set(){
         if(get_active_org()!=null){
@@ -1602,4 +1631,159 @@ class MapsActivity : AppCompatActivity(),
             store_session_data()
         }
     }
+
+
+    fun load_active_route_on_map(){
+        remove_active_route_on_map()
+
+        if(get_active_route()!=null) {
+            val entire_path: MutableList<List<LatLng>> = ArrayList()
+            if (get_active_route()!!.route_directions_data!!.routes.isNotEmpty()) {
+                val route = get_active_route()!!.route_directions_data!!.routes[0]
+                for (leg in route.legs) {
+                    Log.e(TAG, "leg start adress: ${leg.start_address}")
+                    for (step in leg.steps) {
+                        Log.e(TAG, "step maneuver: ${step.maneuver}")
+                        val pathh: List<LatLng> = PolyUtil.decode(step.polyline.points)
+                        entire_path.add(pathh)
+                    }
+                }
+            }
+            draw_route(entire_path)
+            add_marker(get_active_route()!!.set_start_pos!!, constants.start_loc, constants.start_loc)
+            add_marker(get_active_route()!!.set_end_pos!!, constants.end_loc, constants.end_loc)
+            for (item in get_active_route()!!.added_bus_stops) {
+                add_marker(item.stop_location, constants.stop_loc, constants.stop_loc)
+            }
+        }
+    }
+
+    fun remove_active_route_on_map(){
+        remove_all_added_pins()
+        remove_drawn_route()
+    }
+
+
+    var can_update_my_location = true
+    fun load_my_location_on_map(){
+        val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
+
+        var lat_lng = LatLng(last_loc.latitude,last_loc.longitude)
+        if(get_active_route()!=null){
+            lat_lng = get_closest_point_to_route(get_active_route()!!, lat_lng)
+        }
+
+        var op = MarkerOptions().position(lat_lng)
+        var final_icon: BitmapDrawable?  = getDrawable(R.drawable.bus_loc) as BitmapDrawable
+
+        val height = 108
+        val width = 60
+        if(final_icon!=null) {
+            val b: Bitmap = final_icon.bitmap
+            val smallMarker: Bitmap = Bitmap.createScaledBitmap(b, width, height, false)
+            op.icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
+        }
+
+        if(my_marker!=null){
+            my_marker!!.remove()
+        }
+        my_marker = mMap.addMarker(op)
+
+
+        for(trail in my_marker_trailing_markers){
+            trail.remove()
+        }
+        my_marker_trailing_markers.clear()
+
+        for(item in mLastKnownLocations){
+            val pos = mLastKnownLocations.indexOf(item)
+            if(pos+3 >= mLastKnownLocations.lastIndex){
+                //item is one of the last three
+
+                var loc = LatLng(item.latitude,item.longitude)
+                if(get_active_route()!=null){
+                    loc = get_closest_point_to_route(get_active_route()!!, loc)
+                }
+                val circleOptions = CircleOptions()
+                circleOptions.center(loc)
+                circleOptions.radius(1.0)
+                circleOptions.strokeColor(Color.DKGRAY)
+                circleOptions.fillColor(Color.LTGRAY)
+                circleOptions.strokeWidth(1f)
+                val circle = mMap.addCircle(circleOptions)
+                my_marker_trailing_markers.add(circle)
+            }
+        }
+    }
+
+    fun remove_my_location_on_map(){
+        for(trail in my_marker_trailing_markers){
+            trail.remove()
+        }
+        my_marker_trailing_markers.clear()
+
+        if(my_marker!=null){
+            my_marker!!.remove()
+            my_marker == null
+        }
+    }
+
+
+    fun get_closest_point_to_route(set_route :route, my_location:LatLng) :LatLng {
+        val entire_path: MutableList<List<LatLng>> = ArrayList()
+        if (set_route.route_directions_data!!.routes.isNotEmpty()) {
+            val route = set_route.route_directions_data!!.routes[0]
+            for (leg in route.legs) {
+                Log.e(TAG, "leg start adress: ${leg.start_address}")
+                for (step in leg.steps) {
+                    Log.e(TAG, "step maneuver: ${step.maneuver}")
+                    val pathh: List<LatLng> = PolyUtil.decode(step.polyline.points)
+                    entire_path.add(pathh)
+                }
+            }
+        }
+
+        var closest_point = entire_path[0][0]
+        var its_distance_to_me = distance_to(closest_point, my_location)
+        for(path in entire_path){
+            for(point in path){
+                if(distance_to(point, my_location)<its_distance_to_me){
+                    //this point is shorter
+                    closest_point = point
+                    its_distance_to_me = distance_to(point, my_location)
+                }
+            }
+        }
+
+        if(its_distance_to_me<constants.distance_threshold){
+            //if my location is too far from any point to the route
+            return closest_point
+        }else{
+            return my_location
+        }
+    }
+
+    fun distance_to(lat_lng: LatLng, other_lat_lng: LatLng): Long{
+        val loc1 = Location("")
+        loc1.latitude = lat_lng.latitude
+        loc1.longitude = lat_lng.longitude
+
+        val loc2 = Location("")
+        loc2.latitude = other_lat_lng.latitude
+        loc2.longitude = other_lat_lng.longitude
+
+        val distanceInMeters = loc1.distanceTo(loc2)
+        return distanceInMeters.toLong()
+    }
+
+    override fun onSettingsSwitchNightMode() {
+
+    }
+
+    override fun onSettingsChangeOrganisation() {
+        val orgs = Gson().toJson(organisation.organisation_list(organisations))
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .add(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
+    }
+
 }
