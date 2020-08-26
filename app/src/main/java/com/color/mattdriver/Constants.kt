@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import com.google.gson.Gson
 import com.color.mattdriver.Models.number
 import java.io.Serializable
+import java.util.*
 
 class Constants {
     val vib_time: Long = 2
@@ -99,6 +100,18 @@ class Constants {
             if(time_in_seconds==1) t = "sec."
             return time_in_seconds.toString()+t
         }
+
+    }
+
+    fun get_formatted_time(time: Long): String{
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = time
+
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        val month = cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault());
+        val year = cal.get(Calendar.YEAR)
+
+        return "${day} ${month}, ${year}"
 
     }
 

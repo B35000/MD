@@ -11,6 +11,7 @@ import android.util.Log
 import com.color.mattdriver.Constants
 import com.color.mattdriver.Models.number
 import com.color.mattdriver.Models.organisation
+import com.color.mattdriver.Models.route
 import com.color.mattdriver.R
 import com.color.mattdriver.Utilities.GpsUtils
 import com.color.mattdriver.databinding.ActivitySplashBinding
@@ -30,6 +31,7 @@ class SplashActivity : AppCompatActivity() {
     val constants = Constants()
     var organisations: ArrayList<organisation> = ArrayList()
     var my_organisations: ArrayList<String> = ArrayList()
+    var routes: ArrayList<route> = ArrayList()
     val db = Firebase.firestore
 
 
@@ -155,13 +157,42 @@ class SplashActivity : AppCompatActivity() {
                         my_organisations.add(org_id)
                     }
                 }
+                load_routes()
+            }
+    }
+
+    fun load_routes(){
+        val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+        routes.clear()
+        db.collection(constants.organisations)
+            .document(user.phone.country_name)
+            .collection(constants.country_routes)
+            .get().addOnSuccessListener {
+                if(it.documents.isNotEmpty()){
+                    for(item in it.documents) {
+                        val organisation_id = item["organisation_id"] as String
+                        val creation_time = item["creation_time"] as Long
+                        val route_id = item["route_id"] as String
+                        val country = item["country"] as String
+                        val creater = item["creater"] as String
+
+                        val route = Gson().fromJson(item["route"].toString(), route::class.java)
+
+                        routes.add(route)
+                    }
+                }
                 store_session_data()
                 openMap()
             }
     }
 
     fun store_session_data(){
-        val session = Gson().toJson(MapsActivity.session_data(organisations, my_organisations))
+        val session = Gson().toJson(
+            MapsActivity.session_data(
+                organisations, "","",
+                my_organisations, routes
+            )
+        )
         constants.SharedPreferenceManager(applicationContext).store_current_data(session)
     }
 
@@ -172,6 +203,7 @@ class SplashActivity : AppCompatActivity() {
             var session_obj = Gson().fromJson(session, MapsActivity.session_data::class.java)
             organisations = session_obj.organisations
             my_organisations = session_obj.my_organisations
+            routes = session_obj.routes
         }
     }
 }

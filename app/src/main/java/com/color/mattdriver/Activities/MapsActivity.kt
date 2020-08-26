@@ -67,7 +67,8 @@ class MapsActivity : AppCompatActivity(),
     ViewOrganisation.viewOrganisationInterface,
     GoogleMap.OnMyLocationClickListener,
     GoogleMap.OnMyLocationButtonClickListener,
-    GoogleMap.OnMarkerClickListener
+    GoogleMap.OnMarkerClickListener,
+    ViewRoute.ViewRouteInterface
 {
     val TAG = "MapsActivity"
     val _welcome = "_welcome"
@@ -76,6 +77,7 @@ class MapsActivity : AppCompatActivity(),
     val _organisation_passcode =  "_organisation_passcode"
     val _view_organisation = "_view_organisation"
     val _settings = "_settings"
+    val _view_route = "_view_route"
 
     private lateinit var binding: ActivityMapsBinding
     private lateinit var mMap: GoogleMap
@@ -93,6 +95,7 @@ class MapsActivity : AppCompatActivity(),
     var my_organisations: ArrayList<String> = ArrayList()
     var active_organisation = ""
     var routes: ArrayList<route> = ArrayList()
+    var active_route = ""
 
     var mapView: View? = null
     val ZOOM = 15f
@@ -142,9 +145,27 @@ class MapsActivity : AppCompatActivity(),
 //
         binding.continueLayout.setOnClickListener {
             constants.touch_vibrate(applicationContext)
-            val orgs = Gson().toJson(organisation.organisation_list(organisations))
+            if(active_organisation.equals("")){
+                val orgs = Gson().toJson(organisation.organisation_list(organisations))
+                supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                    .replace(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
+            }else{
+                if(get_active_org()!=null){
+                    var org_string = Gson().toJson(get_active_org())
+                    var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(get_active_org()!!)))
+                    supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                        .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string,active_route),_view_organisation).commit()
+
+                }
+            }
+        }
+
+        binding.viewLayout.setOnClickListener {
+            var org_string = Gson().toJson(get_active_org())
+            var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(get_active_org()!!)))
             supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                .replace(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
+                .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string,active_route),_view_organisation).commit()
+
         }
 
         binding.settings.setOnClickListener {
@@ -174,6 +195,10 @@ class MapsActivity : AppCompatActivity(),
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
         Places.initialize(applicationContext, Apis().places_api_key)
         val placesClient: PlacesClient = Places.createClient(this)
+
+
+        when_active_org_set()
+        when_active_route_set()
     }
 
     fun open_welcome_fragment(){
@@ -454,12 +479,12 @@ class MapsActivity : AppCompatActivity(),
         routes.clear()
         db.collection(constants.organisations)
             .document(user.phone.country_name)
-            .collection(constants.country_organisations)
+            .collection(constants.country_routes)
             .get().addOnSuccessListener {
                 if(it.documents.isNotEmpty()){
                     for(item in it.documents) {
                         val organisation_id = item["organisation_id"] as String
-                        val creation_time = item["creation_time"] as String
+                        val creation_time = item["creation_time"] as Long
                         val route_id = item["route_id"] as String
                         val country = item["country"] as String
                         val creater = item["creater"] as String
@@ -470,6 +495,10 @@ class MapsActivity : AppCompatActivity(),
                     }
                 }
                 store_session_data()
+                if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null && get_active_org()!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                        .when_route_data_updated(load_my_organisations_routes(get_active_org()!!))
+                }
             }
     }
 
@@ -505,7 +534,7 @@ class MapsActivity : AppCompatActivity(),
             var org_string = Gson().toJson(organisation)
             var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(organisation)))
             supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string),_view_organisation).commit()
+                .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string,active_route),_view_organisation).commit()
 
         }else{
             val org = Gson().toJson(organisation)
@@ -549,7 +578,9 @@ class MapsActivity : AppCompatActivity(),
             var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(new_org)))
             supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
                 .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,
-                    route_string),_view_organisation).commit()
+                    route_string,active_route),_view_organisation).commit()
+            active_organisation = new_org.org_id!!
+            when_active_org_set()
         }
 
 
@@ -597,10 +628,9 @@ class MapsActivity : AppCompatActivity(),
                         var org_string = Gson().toJson(organisation)
                         var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(organisation)))
                         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                            .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string),_view_organisation).commit()
+                            .replace(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string,active_route),_view_organisation).commit()
 
-                        if(!!constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!.email
-                                .equals(constants.unknown_email)) {
+                        if(!!constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!.email.equals(constants.unknown_email)) {
                             //the user is a registered user.
                             val uid = FirebaseAuth.getInstance().currentUser!!.uid
                             db.collection(constants.coll_users).document(uid)
@@ -613,6 +643,8 @@ class MapsActivity : AppCompatActivity(),
                                     ))
                         }
                         active_organisation = organisation.org_id!!
+                        when_active_org_set()
+                        store_session_data()
                     }else{
                         //if password is wrong
                         if(supportFragmentManager.findFragmentByTag(_organisation_passcode)!=null){
@@ -656,17 +688,20 @@ class MapsActivity : AppCompatActivity(),
         var org_string = Gson().toJson(organisation)
         var route_string = Gson().toJson(route)
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-            .add(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string),_view_organisation).commit()
-
+            .add(binding.money.id,ViewRoute.newInstance("","",org_string,route_string,active_route),_view_route).commit()
 
 //        viewing_route = route
 //        load_my_route(route)
 //        openRouteCreater(organisation)
     }
 
+    override fun whenReloadRoutes() {
+        load_routes()
+    }
+
 
     fun store_session_data(){
-        val session = Gson().toJson(session_data(organisations,active_organisation, my_organisations, routes))
+        val session = Gson().toJson(session_data(organisations,active_organisation,active_route, my_organisations, routes))
         constants.SharedPreferenceManager(applicationContext).store_current_data(session)
     }
 
@@ -679,10 +714,11 @@ class MapsActivity : AppCompatActivity(),
             my_organisations = session_obj.my_organisations
             routes = session_obj.routes
             active_organisation = session_obj.active_organisation
+            active_route = session_obj.active_route
         }
     }
 
-    class session_data(var organisations: ArrayList<organisation>,var active_organisation: String,
+    class session_data(var organisations: ArrayList<organisation>,var active_organisation: String, var active_route: String,
                        var my_organisations: ArrayList<String>,var routes: ArrayList<route>): Serializable
 
 
@@ -1243,7 +1279,7 @@ class MapsActivity : AppCompatActivity(),
         for (i in 0 until entire_paths.size) {
             val op = PolylineOptions()
                 .addAll(entire_paths[i])
-                .width(3f)
+                .width(5f)
                 .color(applicationContext.getResources().getColor(R.color.route_color))
             drawn_polyline.add(mMap.addPolyline(op))
         }
@@ -1285,8 +1321,6 @@ class MapsActivity : AppCompatActivity(),
         val route_ref = db.collection(constants.organisations)
             .document(organisation.country!!)
             .collection(constants.country_routes)
-            .document(organisation.org_id!!)
-            .collection(constants.routes)
             .document()
 
         val time = Calendar.getInstance().timeInMillis
@@ -1511,4 +1545,61 @@ class MapsActivity : AppCompatActivity(),
         return my_routes
     }
 
+
+
+
+
+    override fun whenSetRoute(route: route, organisation: organisation) {
+        active_route = route.route_id
+        onBackPressed()
+        if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+            (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation).when_route_picked(active_route)
+        }
+        when_active_route_set()
+        Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
+    }
+
+    fun get_active_org(): organisation?{
+        for(item in organisations){
+            if (item.org_id.equals(active_organisation)){
+                return item
+            }
+        }
+        return null
+    }
+
+    fun get_active_route(): route?{
+        for(item in routes){
+            if(item.route_id.equals(active_route)){
+                return item
+            }
+        }
+        return null
+    }
+
+
+    fun when_active_route_set(){
+        if(get_active_route()!=null){
+            //active route and org probably
+            binding.continueLayout.visibility = View.GONE
+            binding.viewLayout.visibility = View.VISIBLE
+            binding.sharingLocationLayout.visibility = View.VISIBLE
+            val active_route = get_active_route()!!
+
+            binding.title.text = "On Route"
+            binding.destinationTextview.text = "To: ${active_route.ending_pos_desc}"
+            store_session_data()
+        }
+    }
+
+    fun when_active_org_set(){
+        if(get_active_org()!=null){
+            binding.continueLayout.visibility = View.VISIBLE
+            binding.viewLayout.visibility = View.GONE
+            binding.sharingLocationLayout.visibility = View.GONE
+            binding.title.text = "Set a route"
+            binding.destinationTextview.text = "Set a route you want to use"
+            store_session_data()
+        }
+    }
 }
