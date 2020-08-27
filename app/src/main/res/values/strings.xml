@@ -22,4 +22,6 @@
     <string name="create_route">Draw route</string>
     <string name="add_a_stop">Add stop</string>
     <string name="edit_stop">Edit stop</string>
+    <string name="channel_name">location_channel</string>
+    <string name="stop">stop</string>
 </resources>

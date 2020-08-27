@@ -3,6 +3,10 @@ package com.color.mattdriver.Activities
 import android.Manifest
 import android.animation.ValueAnimator
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -24,6 +28,8 @@ import android.widget.*
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -203,6 +209,8 @@ class MapsActivity : AppCompatActivity(),
         when_active_org_set()
         when_active_route_set()
 
+        createNotificationChannel()
+//        load_notification()
     }
 
     fun open_welcome_fragment(){
@@ -403,6 +411,7 @@ class MapsActivity : AppCompatActivity(),
             mFusedLocationClient.removeLocationUpdates(locationCallback)
         }
         store_session_data()
+        remove_notification()
     }
 
     override fun onStop() {
@@ -441,9 +450,6 @@ class MapsActivity : AppCompatActivity(),
         binding.mapsLoadingScreen.setOnTouchListener { v, _ -> true }
 
     }
-
-
-
 
     fun dpToPx(dp: Int): Int {
         return (dp * Resources.getSystem().getDisplayMetrics().density).toInt()
@@ -521,6 +527,9 @@ class MapsActivity : AppCompatActivity(),
                 store_session_data()
             }
     }
+
+
+
 
     override fun whenReloadOrganisations() {
         load_organisations()
@@ -704,6 +713,10 @@ class MapsActivity : AppCompatActivity(),
 //        openRouteCreater(organisation)
     }
 
+
+
+
+
     override fun whenReloadRoutes() {
         load_routes()
     }
@@ -713,7 +726,6 @@ class MapsActivity : AppCompatActivity(),
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             .replace(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
     }
-
 
     fun store_session_data(){
         val session = Gson().toJson(session_data(organisations,active_organisation,active_route, my_organisations, routes))
@@ -735,6 +747,7 @@ class MapsActivity : AppCompatActivity(),
 
     class session_data(var organisations: ArrayList<organisation>,var active_organisation: String, var active_route: String,
                        var my_organisations: ArrayList<String>,var routes: ArrayList<route>): Serializable
+
 
 
 
@@ -1340,6 +1353,8 @@ class MapsActivity : AppCompatActivity(),
 
 
 
+
+
     fun create_route(organisation: organisation){
         showLoadingScreen()
 
@@ -1605,7 +1620,6 @@ class MapsActivity : AppCompatActivity(),
         return null
     }
 
-
     fun when_active_route_set(){
         if(get_active_route()!=null){
             //active route and org probably
@@ -1621,6 +1635,9 @@ class MapsActivity : AppCompatActivity(),
     }
 
 
+
+
+
     fun when_active_org_set(){
         if(get_active_org()!=null){
             binding.continueLayout.visibility = View.VISIBLE
@@ -1631,7 +1648,6 @@ class MapsActivity : AppCompatActivity(),
             store_session_data()
         }
     }
-
 
     fun load_active_route_on_map(){
         remove_active_route_on_map()
@@ -1662,6 +1678,9 @@ class MapsActivity : AppCompatActivity(),
         remove_all_added_pins()
         remove_drawn_route()
     }
+
+
+
 
 
     var can_update_my_location = true
@@ -1728,7 +1747,6 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
-
     fun get_closest_point_to_route(set_route :route, my_location:LatLng) :LatLng {
         val entire_path: MutableList<List<LatLng>> = ArrayList()
         if (set_route.route_directions_data!!.routes.isNotEmpty()) {
@@ -1785,5 +1803,63 @@ class MapsActivity : AppCompatActivity(),
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             .add(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
     }
+
+
+    val CHANNEL_ID = "matt_notif"
+    val ACTION_SNOOZE = "ACTION_SNOOZE"
+    val EXTRA_NOTIFICATION_ID = "EXTRA_NOTIFICATION_ID"
+    val notificationId = 44
+
+    fun load_notification(){
+        remove_notification()
+
+        val snoozeIntent = Intent(this, MapsActivity::class.java).apply {
+            action = ACTION_SNOOZE
+            putExtra(EXTRA_NOTIFICATION_ID, 0)
+        }
+        val pendingIntent: PendingIntent = PendingIntent.getBroadcast(this, 0, snoozeIntent, 0)
+
+        var builder = NotificationCompat.Builder(this, CHANNEL_ID)
+             .setSmallIcon(R.drawable.ic_notif_icon)
+             .setContentTitle("Matt Driver")
+             .setContentText("Your location is now visible to users.")
+             .setPriority(NotificationCompat.PRIORITY_HIGH)
+//             .setContentIntent(pendingIntent)
+//             .addAction(R.drawable.cancel_icon, getString(R.string.stop), pendingIntent)
+             .setAutoCancel(false)
+
+        with(NotificationManagerCompat.from(this)) {
+            // notificationId is a unique int for each notification that you must define
+            notify(notificationId, builder.build())
+        }
+
+
+    }
+
+
+    fun remove_notification(){
+        with(NotificationManagerCompat.from(this)) {
+            // notificationId is a unique int for each notification that you must define
+            cancel(notificationId)
+        }
+    }
+
+    private fun createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.channel_name)
+            val descriptionText = getString(R.string.channel_name)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
 
 }
