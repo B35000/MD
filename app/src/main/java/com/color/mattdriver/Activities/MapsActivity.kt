@@ -6,7 +6,6 @@ import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -132,6 +131,8 @@ class MapsActivity : AppCompatActivity(),
     var my_marker: Marker? = null
     var my_marker_trailing_markers: ArrayList<Circle> = ArrayList()
 
+    var can_share_location = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.e(TAG,"onCreate")
@@ -205,6 +206,17 @@ class MapsActivity : AppCompatActivity(),
         Places.initialize(applicationContext, Apis().places_api_key)
         val placesClient: PlacesClient = Places.createClient(this)
 
+        binding.nightModeSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+            constants.touch_vibrate(applicationContext)
+            can_share_location = isChecked
+            if(isChecked){
+                binding.darkModeText.text = "Stop sharing location"
+                load_notification()
+            }else{
+                binding.darkModeText.text = "Start sharing location"
+                remove_notification()
+            }
+        }
 
         when_active_org_set()
         when_active_route_set()
@@ -375,7 +387,7 @@ class MapsActivity : AppCompatActivity(),
             mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
             locationRequest = LocationRequest.create()
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-            locationRequest.setInterval(10 * 1000)
+            locationRequest.setInterval(constants.update_interval)
 
 
             locationCallback = object : LocationCallback() {
@@ -1202,7 +1214,9 @@ class MapsActivity : AppCompatActivity(),
 
     fun when_location_gotten(){
         val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
+        val ll = LatLng(last_loc.latitude,last_loc.longitude)
         if(can_update_my_location)load_my_location_on_map()
+        if(can_share_location)set_location_data_in_firebase(ll)
     }
 
     fun getLocationDescription(lat_lng: LatLng, progress_view: ProgressBar, textview: TextView){
@@ -1805,6 +1819,8 @@ class MapsActivity : AppCompatActivity(),
     }
 
 
+
+
     val CHANNEL_ID = "matt_notif"
     val ACTION_SNOOZE = "ACTION_SNOOZE"
     val EXTRA_NOTIFICATION_ID = "EXTRA_NOTIFICATION_ID"
@@ -1836,7 +1852,6 @@ class MapsActivity : AppCompatActivity(),
 
     }
 
-
     fun remove_notification(){
         with(NotificationManagerCompat.from(this)) {
             // notificationId is a unique int for each notification that you must define
@@ -1858,6 +1873,34 @@ class MapsActivity : AppCompatActivity(),
             val notificationManager: NotificationManager =
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    fun set_location_data_in_firebase(pos: LatLng){
+        if(get_active_org()!=null) {
+            val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+
+            val new_pos = db.collection(constants.organisations)
+                .document(user.phone.country_name)
+                .collection(constants.country_organisations)
+                .document(get_active_org()!!.org_id!!)
+                .collection(constants.driver_locations).document()
+
+            val creation_time = Calendar.getInstance().timeInMillis
+
+            val data = hashMapOf(
+                "pos_id" to new_pos.id,
+                "creation_time" to creation_time,
+                "user" to user.uid,
+                "loc" to Gson().toJson(pos),
+                "organisation" to get_active_org()!!.org_id!!,
+                "route" to get_active_route()!!.route_id
+            )
+
+            new_pos.set(data).addOnSuccessListener {
+                Log.e(TAG,"location updated")
+            }
+
         }
     }
 

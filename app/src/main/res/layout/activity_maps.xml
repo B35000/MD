@@ -189,7 +189,7 @@
                                     android:textSize="13sp"
                                     android:layout_centerVertical="true"
                                     android:layout_height="wrap_content"
-                                    android:text="Stop sharing location" />
+                                    android:text="Start sharing location" />
 
                                 <Switch
                                     android:id="@+id/night_mode_switch"
