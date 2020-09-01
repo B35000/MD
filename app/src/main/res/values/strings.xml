@@ -24,4 +24,37 @@
     <string name="edit_stop">Edit stop</string>
     <string name="channel_name">location_channel</string>
     <string name="stop">stop</string>
+    <string name="name">name</string>
+    <string name="finish">Finish</string>
+    <string name="your_number_s_9_digits">712345678</string>
+    <string name="email">email</string>
+    <string name="be_sure_not_to_forget_these">"Don't forget these details "</string>
+    <string name="password">password</string>
+    <string name="confirm_that_password">confirm that password</string>
+    <string name="perfect">perfect</string>
+    <string name="almost">almost</string>
+    <string name="we_need_a_password">please add this</string>
+    <string name="confirm_your_password">confirm your password</string>
+
+    <string name="we_need_your_email">We need your email.</string>
+    <string name="thats_not_your_email">That\'s not an email address.</string>
+    <string name="we_need_your_actual_email_address">We need your actual email address.</string>
+    <string name="thats_not_a_real_email_adress">That\'s not a real email address</string>
+    <string name="we_need_your_actual_email_address_please">We need your actual email address please</string>
+    <string name="at_least_6_characters">Please create a password containing at least 8 characters</string>
+    <string name="passwords_dont_match">Passwords do not match</string>
+    <string name="use_strong_password">Please, use a strong password!</string>
+    <string name="type_something">Type something</string>
+    <string name="suuper_weak">Suuper weak</string>
+    <string name="still_very_weak">Still very weak</string>
+    <string name="better">Better…</string>
+    <string name="at_least_two_more">At least 2 more</string>
+    <string name="a_bit_more">A bit more…</string>
+    <string name="thats_good">Thats good.</string>
+    <string name="very_weak">Very weak</string>
+    <string name="wow">Perfect!</string>
+    <string name="please_fill_this">please fill this</string>
+    <string name="sign_up_instead">Sign up instead</string>
+    <string name="sign_in_instead">Sign up instead</string>
+
 </resources>

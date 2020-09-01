@@ -11,6 +11,7 @@ import android.widget.Switch
 import android.widget.TextView
 import com.color.mattdriver.Constants
 import com.color.mattdriver.R
+import kotlin.math.sign
 
 
 class MainSettings : Fragment() {
@@ -45,6 +46,8 @@ class MainSettings : Fragment() {
         val night_mode_switch: Switch = va.findViewById(R.id.night_mode_switch)
         val dark_mode_text: TextView = va.findViewById(R.id.dark_mode_text)
         val join_organisation_layout: RelativeLayout = va.findViewById(R.id.join_organisation_layout)
+        val sign_in_layout: RelativeLayout = va.findViewById(R.id.sign_in_layout)
+        val sign_in_view: RelativeLayout = va.findViewById(R.id.sign_in_view)
 
         val money: RelativeLayout = va.findViewById(R.id.money)
         money.setOnTouchListener { v, event -> true }
@@ -63,6 +66,15 @@ class MainSettings : Fragment() {
         join_organisation_layout.setOnClickListener {
             listener.onSettingsChangeOrganisation()
             Constants().dark_mode(context!!)
+        }
+
+        sign_in_layout.setOnClickListener {
+            listener.onSettingsSignIn()
+            Constants().dark_mode(context!!)
+        }
+
+        if(Constants().SharedPreferenceManager(context!!).getPersonalInfo()!!.email.equals(Constants().unknown_email)){
+            sign_in_layout.visibility = View.VISIBLE
         }
 
         return va
@@ -84,6 +96,7 @@ class MainSettings : Fragment() {
     interface MainSettingsInterface{
         fun onSettingsSwitchNightMode()
         fun onSettingsChangeOrganisation()
+        fun onSettingsSignIn()
     }
 
 }

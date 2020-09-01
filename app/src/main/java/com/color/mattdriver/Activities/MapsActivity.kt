@@ -74,7 +74,9 @@ class MapsActivity : AppCompatActivity(),
     GoogleMap.OnMyLocationButtonClickListener,
     GoogleMap.OnMarkerClickListener,
     ViewRoute.ViewRouteInterface,
-    MainSettings.MainSettingsInterface
+    MainSettings.MainSettingsInterface,
+    SignUp.SignUpInterface,
+    SignIn.SignInInterface
 {
     val TAG = "MapsActivity"
     val _welcome = "_welcome"
@@ -84,6 +86,8 @@ class MapsActivity : AppCompatActivity(),
     val _view_organisation = "_view_organisation"
     val _settings = "_settings"
     val _view_route = "_view_route"
+    val _sign_up = "sign_up"
+    val _sign_in = "_sign_in"
 
     private lateinit var binding: ActivityMapsBinding
     private lateinit var mMap: GoogleMap
@@ -1818,7 +1822,10 @@ class MapsActivity : AppCompatActivity(),
             .add(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
     }
 
-
+    override fun onSettingsSignIn() {
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .add(binding.money.id, SignUp.newInstance("",""),_sign_up).commit()
+    }
 
 
     val CHANNEL_ID = "matt_notif"
@@ -1902,6 +1909,29 @@ class MapsActivity : AppCompatActivity(),
             }
 
         }
+    }
+
+    override fun whenSignUpDetailsSubmitted(
+        email: String,
+        password: String,
+        name: String,
+        numbr: number
+    ) {
+        TODO("Not yet implemented")
+    }
+
+    override fun whenSignInInstead() {
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .replace(binding.money.id, SignIn.newInstance("",""),_sign_in).commit()
+    }
+
+    override fun whenSignInDetailsSubmitted(email: String, password: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun whenSignInSignUpInsteadSelected() {
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .replace(binding.money.id, SignUp.newInstance("",""),_sign_up).commit()
     }
 
 
