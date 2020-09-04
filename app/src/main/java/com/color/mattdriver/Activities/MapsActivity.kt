@@ -23,6 +23,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
@@ -51,7 +52,11 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import com.google.android.libraries.places.widget.Autocomplete
 import com.google.android.libraries.places.widget.AutocompleteActivity
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
+import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
@@ -216,9 +221,11 @@ class MapsActivity : AppCompatActivity(),
             if(isChecked){
                 binding.darkModeText.text = "Stop sharing location"
                 load_notification()
+                binding.busIcon.setImageResource(R.drawable.bus_loc_shared)
             }else{
                 binding.darkModeText.text = "Start sharing location"
                 remove_notification()
+                binding.busIcon.setImageResource(R.drawable.bus_loc)
             }
         }
 
@@ -266,6 +273,9 @@ class MapsActivity : AppCompatActivity(),
 
     fun removing_fragment_notifier(tag: String){
         if(tag.equals(_view_organisation)){
+            if(viewing_route!=null){
+                viewRoute(viewing_route!!, get_active_org()!!)
+            }
             viewing_route = null
         }
     }
@@ -489,6 +499,10 @@ class MapsActivity : AppCompatActivity(),
                         org.org_id = org_id
                         org.country = country
 
+                        if(item.contains("admins")){
+                            org.admins  = Gson().fromJson(item["admins"] as String, organisation.admin::class.java)
+                        }
+
                         organisations.add(org)
                     }
                 }
@@ -584,18 +598,22 @@ class MapsActivity : AppCompatActivity(),
             .document()
 
         val time = Calendar.getInstance().timeInMillis
+        val admins: ArrayList<String> = ArrayList()
+        admins.add(constants.pass)//mod
 
         val data = hashMapOf(
             "name" to name,
             "org_id" to org_ref.id,
             "country" to country_name,
             "creater" to uid,
-            "creation_time" to time
+            "creation_time" to time,
+            "admins"  to Gson().toJson(organisation.admin(admins))
         )
 
         val new_org = organisation(name,time)
         new_org.org_id = org_ref.id
         new_org.country = country_name
+        new_org.admins = organisation.admin(admins)
 
         organisations.add(new_org)
 
@@ -724,9 +742,6 @@ class MapsActivity : AppCompatActivity(),
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             .add(binding.money.id,ViewRoute.newInstance("","",org_string,route_string,active_route),_view_route).commit()
 
-//        viewing_route = route
-//        load_my_route(route)
-//        openRouteCreater(organisation)
     }
 
 
@@ -822,6 +837,7 @@ class MapsActivity : AppCompatActivity(),
         }
 
         load_active_route_on_map()
+//        show_all_markers()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -850,6 +866,9 @@ class MapsActivity : AppCompatActivity(),
 
     fun openRouteCreater(organisation: organisation){
         hide_normal_home_items()
+        if(viewing_route!=null){
+            load_my_route(viewing_route!!)
+        }
         is_creating_routes = true
         load_bus_stop_adapter()
 
@@ -1208,6 +1227,7 @@ class MapsActivity : AppCompatActivity(),
         binding.bottomSheetLayout.visibility = View.VISIBLE
         binding.money.visibility = View.VISIBLE
         binding.newRouteView.visibility = View.GONE
+        binding.finishCreateRoute.visibility = View.GONE
 
         load_active_route_on_map()
     }
@@ -1220,7 +1240,9 @@ class MapsActivity : AppCompatActivity(),
         val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
         val ll = LatLng(last_loc.latitude,last_loc.longitude)
         if(can_update_my_location)load_my_location_on_map()
-        if(can_share_location)set_location_data_in_firebase(ll)
+        if(can_share_location){
+            set_location_data_in_firebase(ll)
+        }
     }
 
     fun getLocationDescription(lat_lng: LatLng, progress_view: ProgressBar, textview: TextView){
@@ -1308,6 +1330,7 @@ class MapsActivity : AppCompatActivity(),
                     }
                 }
             }
+            remove_drawn_route()
             draw_route(entire_path)
             route_directions_data = directionsData
             hideLoadingScreen()
@@ -1326,11 +1349,20 @@ class MapsActivity : AppCompatActivity(),
     fun draw_route(entire_paths: MutableList<List<LatLng>>){
         remove_drawn_route()
         for (i in 0 until entire_paths.size) {
-            val op = PolylineOptions()
-                .addAll(entire_paths[i])
-                .width(5f)
-                .color(applicationContext.getResources().getColor(R.color.route_color))
-            drawn_polyline.add(mMap.addPolyline(op))
+            if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
+                val op = PolylineOptions()
+                    .addAll(entire_paths[i])
+                    .width(5f)
+                    .color(Color.WHITE)
+                drawn_polyline.add(mMap.addPolyline(op))
+            }else{
+                val op = PolylineOptions()
+                    .addAll(entire_paths[i])
+                    .width(5f)
+                    .color(Color.BLACK)
+                drawn_polyline.add(mMap.addPolyline(op))
+            }
+
         }
 
     }
@@ -1439,8 +1471,6 @@ class MapsActivity : AppCompatActivity(),
         val route_ref = db.collection(constants.organisations)
             .document(organisation.country!!)
             .collection(constants.country_routes)
-            .document(organisation.org_id!!)
-            .collection(constants.routes)
             .document(route.route_id)
 
         route.starting_pos_desc = set_start_pos_desc
@@ -1465,10 +1495,10 @@ class MapsActivity : AppCompatActivity(),
             "country" to organisation.country,
             "route_id" to route.route_id,
             "creation_time" to route.creation_time,
-            "creater" to uid
+            "creater" to route.creater
         )
 
-        route_ref.update(data).addOnSuccessListener {
+        route_ref.set(data).addOnSuccessListener {
             hideLoadingScreen()
             var pos = -1
             for(item in routes){
@@ -1489,10 +1519,14 @@ class MapsActivity : AppCompatActivity(),
             for(item in added_markers.values){
                 item.remove()
             }
+//            viewRoute(route, organisation)
             //remove the drawn route
             remove_drawn_route()
             onBackPressed()
             Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener {
+            hideLoadingScreen()
+            Toast.makeText(applicationContext,"Something went wrong", Toast.LENGTH_SHORT).show()
         }
 
     }
@@ -1542,6 +1576,8 @@ class MapsActivity : AppCompatActivity(),
 
         set_start_pos = route.set_start_pos
         set_start_pos_desc = route.starting_pos_desc
+        binding.startLocationDescription.text = set_start_pos_desc
+
 
         var selectedString = ""
         var selected_location_id = ""
@@ -1557,6 +1593,7 @@ class MapsActivity : AppCompatActivity(),
 
         set_end_pos = route.set_end_pos
         set_end_pos_desc = route.ending_pos_desc
+        binding.endLocationDescription.text = set_end_pos_desc
 
         selectedString = ""
         selected_location_id = ""
@@ -1618,6 +1655,12 @@ class MapsActivity : AppCompatActivity(),
         when_active_route_set()
         load_active_route_on_map()
         Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun whenEditRoute(route: route, organisation: organisation) {
+        viewing_route = route
+        onBackPressed()
+        openRouteCreater(organisation)
     }
 
     fun get_active_org(): organisation?{
@@ -1689,6 +1732,12 @@ class MapsActivity : AppCompatActivity(),
             for (item in get_active_route()!!.added_bus_stops) {
                 add_marker(item.stop_location, constants.stop_loc, constants.stop_loc)
             }
+//            show_all_markers()
+
+            val new_lat_lng = LatLng(get_active_route()!!.set_start_pos!!.latitude, get_active_route()!!.set_start_pos!!.longitude)
+            val zoom = mMap.cameraPosition.zoom
+
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new_lat_lng, zoom))
         }
     }
 
@@ -1714,7 +1763,7 @@ class MapsActivity : AppCompatActivity(),
         var final_icon: BitmapDrawable?  = getDrawable(R.drawable.bus_loc) as BitmapDrawable
 
         val height = 108
-        val width = 60
+        val width = 55
         if(final_icon!=null) {
             val b: Bitmap = final_icon.bitmap
             val smallMarker: Bitmap = Bitmap.createScaledBitmap(b, width, height, false)
@@ -1744,9 +1793,13 @@ class MapsActivity : AppCompatActivity(),
                 val circleOptions = CircleOptions()
                 circleOptions.center(loc)
                 circleOptions.radius(1.0)
-                circleOptions.strokeColor(Color.DKGRAY)
+                if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()) {
+                    circleOptions.strokeColor(Color.DKGRAY)
+                }else{
+                    circleOptions.strokeColor(Color.BLACK)
+                }
                 circleOptions.fillColor(Color.LTGRAY)
-                circleOptions.strokeWidth(1f)
+                circleOptions.strokeWidth(0f)
                 val circle = mMap.addCircle(circleOptions)
                 my_marker_trailing_markers.add(circle)
             }
@@ -1911,13 +1964,107 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
+    var is_signing_in_manually = false
+    var mAuth: FirebaseAuth? = null
     override fun whenSignUpDetailsSubmitted(
         email: String,
         password: String,
         name: String,
         numbr: number
     ) {
-        TODO("Not yet implemented")
+        mAuth = FirebaseAuth.getInstance()
+        if(isOnline()) {
+            showLoadingScreen()
+            val view = this.currentFocus
+            if (view != null) {
+                val imm: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(view.windowToken, 0)
+            }
+
+            is_signing_in_manually = true
+            //the user is anonymous, lets link their account
+            val credential = EmailAuthProvider.getCredential(email, password)
+            mAuth!!.currentUser!!.linkWithCredential(credential)
+                .addOnCompleteListener {task ->
+                    if (task.isSuccessful) {
+                        Log.d("main", "authentication successful")
+                        createFirebaseUserProfile(task.result!!.user,email,name,numbr)
+                    } else {
+                        Snackbar.make(binding.root, resources.getString(R.string.that_didnt_work), Snackbar.LENGTH_LONG).show()
+                        hideLoadingScreen()
+                        is_signing_in_manually = false
+                    }
+                }
+        }else{
+            Snackbar.make(binding.root,getString(R.string.please_check_on_your_internet_connection),
+                Snackbar.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun createFirebaseUserProfile(user: FirebaseUser?,  email: String, name: String, numbr: number) {
+        val addProfileName = UserProfileChangeRequest.Builder().setDisplayName(name).build()
+        val time = Calendar.getInstance().timeInMillis
+        if (user != null) {
+            user.updateProfile(addProfileName).addOnCompleteListener { task ->
+                whenNetworkAvailable()
+                if (task.isSuccessful) {
+                    Log.d("main", "Created new username,")
+                    constants.SharedPreferenceManager(applicationContext)
+                        .setPersonalInfo(numbr,email,name, Calendar.getInstance().timeInMillis,user.uid)
+                }
+            }.addOnFailureListener { whenNetworkLost() }
+
+            val myDataDoc = hashMapOf(
+                "email" to email,
+                "name" to name,
+                "uid" to user.uid,
+                "sign_up_time" to time,
+                "user_country" to numbr.country_name
+            )
+
+            val uid = user.uid
+            db.collection(constants.coll_users).document(uid)
+                .set(myDataDoc)
+                .addOnSuccessListener {
+                    whenNetworkAvailable()
+                    db.collection(constants.coll_users).document(uid).collection(constants.coll_meta_data)
+                        .document(constants.doc_phone).set(numbr)
+                        .addOnSuccessListener {
+                            Log.e(TAG,"created a new user!")
+
+                            hideLoadingScreen()
+                            is_signing_in_manually = false
+
+                            if(supportFragmentManager.findFragmentByTag(_settings)!=null){
+                                (supportFragmentManager.findFragmentByTag(_settings) as MainSettings).didUserSignUp()
+                            }
+                            onBackPressed()
+                        }
+                }.addOnFailureListener { whenNetworkLost() }
+
+            for(item in my_organisations){
+                for(org in organisations) {
+                    if(org.org_id!!.equals(item)){
+                        db.collection(constants.coll_users).document(uid)
+                            .collection(constants.my_organisations)
+                            .document(item)
+                            .set(hashMapOf(
+                                "name" to org.name,
+                                "org_id" to org.org_id,
+                                "creation_time" to org.creation_time
+                            )
+                            )
+                    }
+                }
+            }
+        }
+    }
+
+    fun isOnline(): Boolean {
+        val cm = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val netInfo = cm.activeNetworkInfo
+        //should check null because in airplane mode it will be null
+        return netInfo != null && netInfo.isConnected
     }
 
     override fun whenSignInInstead() {
@@ -1925,8 +2072,64 @@ class MapsActivity : AppCompatActivity(),
             .replace(binding.money.id, SignIn.newInstance("",""),_sign_in).commit()
     }
 
+    var mAuthListener: FirebaseAuth.AuthStateListener? = null
     override fun whenSignInDetailsSubmitted(email: String, password: String) {
-        TODO("Not yet implemented")
+        if(isOnline()){
+            showLoadingScreen()
+            mAuth = FirebaseAuth.getInstance()
+            mAuthListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+                Log.d("main", "user status changes")
+                val user = firebaseAuth.currentUser
+                if (user != null) {
+                    val uid = user.uid
+                    load_my_organisations()
+                    db.collection(constants.coll_users).document(uid).get().addOnSuccessListener {
+                        if(it.exists()){
+                            val name = it.get("name") as String
+                            val sign_up_time = it.get("sign_up_time") as Long
+
+                            db.collection(constants.coll_users).document(uid).collection(constants.coll_meta_data)
+                                .document(constants.doc_phone).get().addOnSuccessListener {
+                                    val numbr = number(
+                                        it.get("digit_number") as Long,
+                                        it.get("country_number_code") as String,
+                                        it.get("country_name") as String,
+                                        it.get("country_name_code") as String
+                                    )
+                                    constants.SharedPreferenceManager(applicationContext).setPersonalInfo(numbr,email,name, sign_up_time,user.uid)
+                                    hideLoadingScreen()
+                                    if(supportFragmentManager.findFragmentByTag(_settings)!=null){
+                                        (supportFragmentManager.findFragmentByTag(_settings) as MainSettings).didUserSignUp()
+                                    }
+                                    onBackPressed()
+                                    mAuth!!.removeAuthStateListener(mAuthListener!!)
+                                }
+
+                        }
+                    }
+                }
+            }
+            mAuth!!.addAuthStateListener(mAuthListener!!)
+
+            val view = this.currentFocus
+            if (view != null) {
+                val imm: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(view.windowToken, 0)
+            }
+            mAuth!!.signInWithEmailAndPassword(email, password).addOnCompleteListener(this) { task ->
+                whenNetworkAvailable()
+                Log.d("main", "signInWithEmail:onComplete" + task.isSuccessful)
+                if (!task.isSuccessful) {
+                    Snackbar.make(binding.root, "That didn't work. Please check your credentials and retry.", Snackbar.LENGTH_LONG).show()
+                    if(supportFragmentManager.findFragmentByTag(_sign_in)!=null){
+                        (supportFragmentManager.findFragmentByTag(_sign_in) as SignIn).didPasscodeFail()
+                    }
+                    hideLoadingScreen()
+                }
+            }.addOnFailureListener { whenNetworkLost() }
+        }else{
+            Snackbar.make(binding.root,getString(R.string.please_check_on_your_internet_connection),Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     override fun whenSignInSignUpInsteadSelected() {

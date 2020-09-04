@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/window_background"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".Fragments.SignIn">
 
@@ -85,6 +86,7 @@
                 android:paddingLeft="20dp"
                 android:paddingRight="20dp"
                 android:textColorHint="@color/hint_color"
+                android:textColor="@color/text_color"
                 android:paddingBottom="15dp"
                 android:ems="10"
                 android:inputType="textEmailAddress"
@@ -99,6 +101,7 @@
                 android:paddingLeft="20dp"
                 android:textSize="16sp"
                 android:textColorHint="@color/hint_color"
+                android:textColor="@color/text_color"
                 android:paddingRight="20dp"
                 android:paddingBottom="15dp"
                 android:ems="10"

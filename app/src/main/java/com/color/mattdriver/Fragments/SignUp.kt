@@ -85,8 +85,15 @@ class SignUp : Fragment() {
         val sign_in_instead: TextView = va.findViewById(R.id.sign_in_instead)
 
         val progressDrawable: Drawable = confirm_progress_bar.getProgressDrawable().mutate()
-        progressDrawable.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
-        confirm_progress_bar.setProgressDrawable(progressDrawable)
+
+        if(Constants().SharedPreferenceManager(context!!).isDarkModeOn()){
+            progressDrawable.setColorFilter(Color.DKGRAY, PorterDuff.Mode.SRC_IN)
+            confirm_progress_bar.setProgressDrawable(progressDrawable)
+        }else{
+            progressDrawable.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN)
+            confirm_progress_bar.setProgressDrawable(progressDrawable)
+        }
+
 
         confirmPasswordEditText.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(p0: Editable?) {
@@ -209,9 +216,7 @@ class SignUp : Fragment() {
                 }else{
                     if(phoneNo.equals("")){
                         phoneEditText.setError(getString(R.string.please_fill_this))
-                    }else if(!ccp.isValidFullNumber){
-                        phoneEditText.setError("That's not a real number!")
-                    } else {
+                    }else {
                         val the_number = number(
                             phoneNo.replace(" ".toRegex(), "").toLong(),
                             ccp.selectedCountryCodeWithPlus,

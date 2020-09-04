@@ -9,6 +9,7 @@
 
     <RelativeLayout
         android:id="@+id/money"
+
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
@@ -64,7 +65,7 @@
                             android:textSize="13sp"
                             android:layout_marginTop="5dp"
                             android:layout_height="wrap_content"
-                            android:text="Sign up to store all your information online" />
+                            android:text="Sign up to store all your info online" />
 
                     </LinearLayout>
 

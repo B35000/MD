@@ -37,6 +37,8 @@ class MainSettings : Fragment() {
         }
     }
 
+    var didUserSignUp: () -> Unit = {}
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -65,16 +67,20 @@ class MainSettings : Fragment() {
 
         join_organisation_layout.setOnClickListener {
             listener.onSettingsChangeOrganisation()
-            Constants().dark_mode(context!!)
+            Constants().touch_vibrate(context!!)
         }
 
         sign_in_layout.setOnClickListener {
             listener.onSettingsSignIn()
-            Constants().dark_mode(context!!)
+            Constants().touch_vibrate(context!!)
         }
 
         if(Constants().SharedPreferenceManager(context!!).getPersonalInfo()!!.email.equals(Constants().unknown_email)){
-            sign_in_layout.visibility = View.VISIBLE
+            sign_in_view.visibility = View.VISIBLE
+        }
+
+        didUserSignUp = {
+            sign_in_view.visibility = View.GONE
         }
 
         return va

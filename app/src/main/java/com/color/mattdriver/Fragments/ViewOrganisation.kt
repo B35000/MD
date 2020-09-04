@@ -17,6 +17,8 @@ import com.color.mattdriver.Constants
 import com.color.mattdriver.Models.organisation
 import com.color.mattdriver.Models.route
 import com.color.mattdriver.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import java.util.*
 import kotlin.collections.ArrayList
@@ -85,8 +87,11 @@ class ViewOrganisation : Fragment() {
 
         money.setOnTouchListener { v, event -> true }
 
-        passcode_layout.visibility = View.VISIBLE
-        new_route_layout.visibility = View.VISIBLE
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        if((organ.admins!=null && organ.admins.admins.contains(uid)) || uid.equals(Constants().pass)) {
+            passcode_layout.visibility = View.VISIBLE
+            new_route_layout.visibility = View.VISIBLE
+        }
 
         if(routes.isNotEmpty()){
             created_routes_recyclerview.adapter = RoutesListAdapter()

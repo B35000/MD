@@ -29,6 +29,8 @@ class SignIn : Fragment() {
         }
     }
 
+    var didPasscodeFail: () -> Unit = {}
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if(context is SignInInterface){
@@ -64,6 +66,10 @@ class SignIn : Fragment() {
                 listener.whenSignInDetailsSubmitted(email,password)
             }
             Constants().touch_vibrate(context)
+        }
+
+        didPasscodeFail = {
+            emailEditText.setError("Retype these details")
         }
 
         return va

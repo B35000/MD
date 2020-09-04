@@ -173,6 +173,72 @@
                 android:layout_height="wrap_content"
                 android:text="Killeton Bus Services" />
 
+            <RelativeLayout
+                android:id="@+id/edit_layout"
+                android:layout_width="match_parent"
+                android:visibility="visible"
+                android:layout_marginTop="20dp"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:textSize="16sp"
+                        android:textColor="@color/colorAccent"
+                        android:layout_height="wrap_content"
+                        android:text="Edit" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:textSize="13sp"
+                        android:layout_height="wrap_content"
+                        android:text="Edit the route" />
+
+                </LinearLayout>
+
+                <RelativeLayout
+                    android:id="@+id/edit_route_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:paddingBottom="5dp"
+                    android:paddingTop="5dp"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:textSize="15sp"
+                            android:layout_gravity="center_vertical"
+                            android:textColor="@color/colorPrimary"
+                            android:layout_height="wrap_content"
+                            android:text="@string/Continue" />
+
+
+                        <ImageView
+                            android:layout_width="19dp"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="5dp"
+                            android:translationY="1dp"
+                            android:src="@drawable/next_arrow"
+                            android:layout_height="16dp"/>
+
+                    </LinearLayout>
+
+                </RelativeLayout>
+
+            </RelativeLayout>
+
         </LinearLayout>
 
     </RelativeLayout>

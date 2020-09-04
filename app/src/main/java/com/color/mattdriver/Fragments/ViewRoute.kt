@@ -12,6 +12,7 @@ import com.color.mattdriver.Constants
 import com.color.mattdriver.Models.organisation
 import com.color.mattdriver.Models.route
 import com.color.mattdriver.R
+import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
 
 // TODO: Rename parameter arguments, choose names that match
@@ -64,6 +65,8 @@ class ViewRoute : Fragment() {
         val destination_text: TextView = va.findViewById(R.id.destination_text)
         val stops_text: TextView = va.findViewById(R.id.stops_text)
         val organisation_name: TextView = va.findViewById(R.id.organisation_name)
+        val edit_route_layout: RelativeLayout = va.findViewById(R.id.edit_route_layout)
+        val edit_layout: RelativeLayout = va.findViewById(R.id.edit_layout)
 
         val money: RelativeLayout = va.findViewById(R.id.money)
 
@@ -91,6 +94,16 @@ class ViewRoute : Fragment() {
 
         when_route_picked(set_route)
 
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        if((my_organisation.admins!=null && my_organisation.admins.admins.contains(uid)) || uid.equals(Constants().pass)) {
+            edit_layout.visibility = View.VISIBLE
+        }
+
+        edit_route_layout.setOnClickListener {
+            Constants().touch_vibrate(context)
+            listener.whenEditRoute(my_route,my_organisation)
+        }
+
         return va
     }
 
@@ -110,5 +123,6 @@ class ViewRoute : Fragment() {
 
     interface ViewRouteInterface{
         fun whenSetRoute(route: route,organisation: organisation)
+        fun whenEditRoute(route: route,organisation: organisation)
     }
 }

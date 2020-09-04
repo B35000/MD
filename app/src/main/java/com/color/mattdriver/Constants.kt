@@ -37,6 +37,9 @@ class Constants {
     val distance_threshold = 69
     val driver_locations = "driver_locations"
     val update_interval: Long = (7*1000)
+    val coll_meta_data = "coll_meta_data"
+    val doc_phone = "doc_phone"
+    val pass = "gHH5SGcFemdzqHmNCbjy3AHWiun1"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
