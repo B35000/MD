@@ -1882,11 +1882,11 @@ class MapsActivity : AppCompatActivity(),
                 circleOptions.center(loc)
                 circleOptions.radius(1.0)
                 if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()) {
-                    circleOptions.strokeColor(Color.DKGRAY)
+                    circleOptions.fillColor(Color.DKGRAY)
                 }else{
-                    circleOptions.strokeColor(Color.BLACK)
+                    circleOptions.fillColor(Color.BLACK)
                 }
-                circleOptions.fillColor(Color.LTGRAY)
+                circleOptions.strokeColor(Color.LTGRAY)
                 circleOptions.strokeWidth(0f)
                 val circle = mMap.addCircle(circleOptions)
                 my_marker_trailing_markers.add(circle)

@@ -8,7 +8,11 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.telephony.TelephonyManager
 import android.util.Log
+import android.widget.Toast
 import com.color.mattdriver.Constants
+import com.color.mattdriver.Fragments.JoinOrganisation
+import com.color.mattdriver.Fragments.ViewOrganisation
+import com.color.mattdriver.Models.driver
 import com.color.mattdriver.Models.number
 import com.color.mattdriver.Models.organisation
 import com.color.mattdriver.Models.route
@@ -141,9 +145,46 @@ class SplashActivity : AppCompatActivity() {
                         organisations.add(org)
                     }
                 }
-                load_my_organisations()
+                load_organisation_drivers()
             }
     }
+
+    var driver_iter = 0
+    fun load_organisation_drivers(){
+        driver_iter = 0
+        for(org in organisations){
+            val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+            val time = Calendar.getInstance().timeInMillis
+            db.collection(constants.organisations)
+                .document(user.phone.country_name)
+                .collection(constants.country_organisations)
+                .document(org.org_id!!)
+                .collection(constants.drivers)
+                .get().addOnSuccessListener {
+                    if(!it.isEmpty){
+                        for(doc in it.documents) {
+                            val driver_id = doc["driver_id"] as String
+                            val org_id = doc["org_id"] as String
+                            val join_time = doc["join_time"] as Long
+
+                            val driver = driver(driver_id,org_id, join_time)
+                            for(item in organisations){
+                                if(item.org_id.equals(org_id)){
+                                    item.drivers.add(driver)
+                                }
+                            }
+                        }
+                    }
+                    driver_iter+=1
+                    if(driver_iter >= organisations.size){
+                        //were done
+                        load_my_organisations()
+                    }
+                }.addOnFailureListener{
+                }
+        }
+    }
+
 
     fun load_my_organisations(){
         my_organisations.clear()
@@ -196,14 +237,4 @@ class SplashActivity : AppCompatActivity() {
         constants.SharedPreferenceManager(applicationContext).store_current_data(session)
     }
 
-    fun set_session_data(){
-        val session = constants.SharedPreferenceManager(applicationContext).get_current_data()
-        if(!session.equals("")){
-            //its not empty
-            var session_obj = Gson().fromJson(session, MapsActivity.session_data::class.java)
-            organisations = session_obj.organisations
-            my_organisations = session_obj.my_organisations
-            routes = session_obj.routes
-        }
-    }
 }
