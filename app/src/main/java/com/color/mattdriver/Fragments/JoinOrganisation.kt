@@ -121,6 +121,11 @@ class JoinOrganisation : Fragment() {
             }
         }
 
+        val user_id = FirebaseAuth.getInstance().currentUser!!.uid
+        if(user_id.equals(Constants().pass)){
+            create_layout.visibility = View.VISIBLE
+        }
+
         return va
     }
 

@@ -40,6 +40,7 @@ class Constants {
     val coll_meta_data = "coll_meta_data"
     val doc_phone = "doc_phone"
     val pass = "gHH5SGcFemdzqHmNCbjy3AHWiun1"
+    val drivers = "drivers"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator

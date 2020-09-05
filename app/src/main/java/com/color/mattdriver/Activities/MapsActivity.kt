@@ -81,7 +81,8 @@ class MapsActivity : AppCompatActivity(),
     ViewRoute.ViewRouteInterface,
     MainSettings.MainSettingsInterface,
     SignUp.SignUpInterface,
-    SignIn.SignInInterface
+    SignIn.SignInInterface,
+    Drivers.DriversInterface
 {
     val TAG = "MapsActivity"
     val _welcome = "_welcome"
@@ -93,6 +94,7 @@ class MapsActivity : AppCompatActivity(),
     val _view_route = "_view_route"
     val _sign_up = "sign_up"
     val _sign_in = "_sign_in"
+    val _view_drivers = "_view_drivers"
 
     private lateinit var binding: ActivityMapsBinding
     private lateinit var mMap: GoogleMap
@@ -502,16 +504,74 @@ class MapsActivity : AppCompatActivity(),
                         if(item.contains("admins")){
                             org.admins  = Gson().fromJson(item["admins"] as String, organisation.admin::class.java)
                         }
+                        if(item.contains("deactives")){
+                            org.deactivated_drivers = Gson().fromJson(item["deactives"] as String, organisation.deactive_drivers::class.java)
+                        }
 
                         organisations.add(org)
                     }
                 }
-                store_session_data()
-                if(supportFragmentManager.findFragmentByTag(_join_organisation)!=null){
-                    (supportFragmentManager.findFragmentByTag(_join_organisation) as JoinOrganisation)
-                        .onOrganisationListReloaded(organisations)
+                if(organisations.isNotEmpty()){
+                    load_organisation_drivers()
+                }else{
+                    store_session_data()
+                    if(supportFragmentManager.findFragmentByTag(_join_organisation)!=null){
+                        (supportFragmentManager.findFragmentByTag(_join_organisation) as JoinOrganisation)
+                            .onOrganisationListReloaded(organisations)
+                    }
+                    if(get_active_org()!=null && supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                        (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                            .onOrganisationReloaded(get_active_org()!!)
+                    }
                 }
             }
+    }
+
+    var driver_iter = 0
+    fun load_organisation_drivers(){
+        driver_iter = 0
+        for(org in organisations){
+            val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+            val time = Calendar.getInstance().timeInMillis
+            db.collection(constants.organisations)
+                .document(user.phone.country_name)
+                .collection(constants.country_organisations)
+                .document(org.org_id!!)
+                .collection(constants.drivers)
+                .get().addOnSuccessListener {
+                    if(!it.isEmpty){
+                        for(doc in it.documents) {
+                            val driver_id = doc["driver_id"] as String
+                            val org_id = doc["org_id"] as String
+                            val join_time = doc["join_time"] as Long
+
+                            val driver = driver(driver_id,org_id, join_time)
+                            for(item in organisations){
+                                if(item.org_id.equals(org_id)){
+                                    item.drivers.add(driver)
+                                }
+                            }
+                        }
+                    }
+                    driver_iter+=1
+                    if(driver_iter >= organisations.size){
+                        //were done
+                        store_session_data()
+                        if(supportFragmentManager.findFragmentByTag(_join_organisation)!=null){
+                            (supportFragmentManager.findFragmentByTag(_join_organisation) as JoinOrganisation)
+                                .onOrganisationListReloaded(organisations)
+                        }
+                        if(get_active_org()!=null && supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                            (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                                .onOrganisationReloaded(get_active_org()!!)
+                        }
+                    }
+                    whenNetworkAvailable()
+                }.addOnFailureListener{
+                    Toast.makeText(applicationContext, "Something went wrong",Toast.LENGTH_SHORT).show()
+                    whenNetworkLost()
+                }
+        }
     }
 
     fun load_routes(){
@@ -599,6 +659,7 @@ class MapsActivity : AppCompatActivity(),
 
         val time = Calendar.getInstance().timeInMillis
         val admins: ArrayList<String> = ArrayList()
+        val deactives: ArrayList<String> = ArrayList()
         admins.add(constants.pass)//mod
 
         val data = hashMapOf(
@@ -607,7 +668,8 @@ class MapsActivity : AppCompatActivity(),
             "country" to country_name,
             "creater" to uid,
             "creation_time" to time,
-            "admins"  to Gson().toJson(organisation.admin(admins))
+            "admins"  to Gson().toJson(organisation.admin(admins)),
+            "deactives" to Gson().toJson(organisation.deactive_drivers(deactives))
         )
 
         val new_org = organisation(name,time)
@@ -682,9 +744,9 @@ class MapsActivity : AppCompatActivity(),
                         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
                             .replace(binding.money.id,ViewOrganisation.newInstance("","",org_string,route_string,active_route),_view_organisation).commit()
 
-                        if(!!constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!.email.equals(constants.unknown_email)) {
+                        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+                        if(!constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!.email.equals(constants.unknown_email)) {
                             //the user is a registered user.
-                            val uid = FirebaseAuth.getInstance().currentUser!!.uid
                             db.collection(constants.coll_users).document(uid)
                                 .collection(constants.my_organisations)
                                 .document(organisation.org_id!!)
@@ -693,6 +755,25 @@ class MapsActivity : AppCompatActivity(),
                                         "org_id" to organisation.org_id,
                                         "creation_time" to organisation.creation_time
                                     ))
+                        }
+                        val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+                        val time = Calendar.getInstance().timeInMillis
+                        db.collection(constants.organisations)
+                            .document(user.phone.country_name)
+                            .collection(constants.country_organisations)
+                            .document(organisation.org_id!!)
+                            .collection(constants.drivers)
+                            .document(uid)
+                            .set(hashMapOf(
+                                "driver_id" to uid,
+                                "org_id" to organisation.org_id,
+                                "join_time" to time
+                            ))
+                        val driver = driver(uid,organisation.org_id!!, time)
+                        for(item in organisations){
+                            if(item.org_id.equals(organisation.org_id)){
+                                item.drivers.add(driver)
+                            }
                         }
                         active_organisation = organisation.org_id!!
                         when_active_org_set()
@@ -750,12 +831,19 @@ class MapsActivity : AppCompatActivity(),
 
     override fun whenReloadRoutes() {
         load_routes()
+        load_organisations()
     }
 
     override fun onChangeOrganisation() {
         val orgs = Gson().toJson(organisation.organisation_list(organisations))
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             .replace(binding.money.id,JoinOrganisation.newInstance("","", orgs),_join_organisation).commit()
+    }
+
+    override fun viewDrivers(organisation: organisation) {
+        val org = Gson().toJson(organisation)
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .add(binding.money.id, Drivers.newInstance("","", org),_view_drivers).commit()
     }
 
     fun store_session_data(){
@@ -1091,7 +1179,7 @@ class MapsActivity : AppCompatActivity(),
 //            op.draggable(true)
         }
 
-        val height = 90
+        val height = 95
         val width = 35
         if(final_icon!=null) {
             val b: Bitmap = final_icon.bitmap
@@ -2135,6 +2223,100 @@ class MapsActivity : AppCompatActivity(),
     override fun whenSignInSignUpInsteadSelected() {
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             .replace(binding.money.id, SignUp.newInstance("",""),_sign_up).commit()
+    }
+
+    override fun whenDriverDeActivated(organ: organisation, drivr: driver, value: Boolean) {
+        showLoadingScreen()
+        val time = Calendar.getInstance().timeInMillis
+        db.collection(constants.organisations)
+            .document(organ.country!!)
+            .collection(constants.country_organisations)
+            .document(organ.org_id!!)
+            .collection(constants.drivers)
+            .document(drivr.driver_id)
+            .set(hashMapOf(
+                "driver_id" to drivr.driver_id,
+                "org_id" to organ.org_id,
+                "join_time" to drivr.joining_time,
+                "active" to value
+            ))
+
+        if(value) {
+            organ.deactivated_drivers.deactivated_drivers.add(drivr.driver_id)
+        }else{
+            organ.deactivated_drivers.deactivated_drivers.remove(drivr.driver_id)
+        }
+
+        db.collection(constants.organisations)
+            .document(organ.country!!)
+            .collection(constants.country_organisations)
+            .document(organ.org_id!!)
+            .update(mapOf(
+                "deactives"  to Gson().toJson(organ.deactivated_drivers)
+            )).addOnSuccessListener {
+                hideLoadingScreen()
+                Toast.makeText(applicationContext,"done!",Toast.LENGTH_SHORT).show()
+
+                for(item in organisations){
+                    if(item.org_id.equals(organ.org_id)){
+                        if(value) {
+                            item.deactivated_drivers.deactivated_drivers.add(drivr.driver_id)
+                        }else{
+                            item.deactivated_drivers.deactivated_drivers.remove(drivr.driver_id)
+                        }
+                    }
+                }
+                if(get_active_org()!=null && supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation).onOrganisationReloaded(get_active_org()!!)
+                }
+                if(get_active_org()!=null && supportFragmentManager.findFragmentByTag(_view_drivers)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_drivers) as Drivers).onOrganisationReloaded(get_active_org()!!)
+                }
+            }.addOnFailureListener {
+                hideLoadingScreen()
+                Toast.makeText(applicationContext,"something went wrong",Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    override fun whenDriverSetAdmin(organ: organisation, drivr: driver, value: Boolean) {
+        showLoadingScreen()
+
+        if(value){
+            organ.admins.admins.add(drivr.driver_id)
+        }else{
+            organ.admins.admins.remove(drivr.driver_id)
+        }
+
+
+        db.collection(constants.organisations)
+            .document(organ.country!!)
+            .collection(constants.country_organisations)
+            .document(organ.org_id!!)
+            .update(mapOf(
+                "admins"  to Gson().toJson(organ.admins)
+            )).addOnSuccessListener {
+                hideLoadingScreen()
+                Toast.makeText(applicationContext,"done!",Toast.LENGTH_SHORT).show()
+
+                for(item in organisations){
+                    if(item.org_id.equals(organ.org_id)){
+                        if(value){
+                            item.admins.admins.add(drivr.driver_id)
+                        }else{
+                            item.admins.admins.remove(drivr.driver_id)
+                        }
+                    }
+                }
+                if(get_active_org()!=null && supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation).onOrganisationReloaded(get_active_org()!!)
+                }
+                if(get_active_org()!=null && supportFragmentManager.findFragmentByTag(_view_drivers)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_drivers) as Drivers).onOrganisationReloaded(get_active_org()!!)
+                }
+            }.addOnFailureListener {
+                hideLoadingScreen()
+                Toast.makeText(applicationContext,"something went wrong",Toast.LENGTH_SHORT).show()
+            }
     }
 
 

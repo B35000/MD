@@ -55,6 +55,10 @@ class ViewOrganisation : Fragment() {
 
     var when_route_picked: (route: String) -> Unit = {}
 
+    var onOrganisationReloaded: (organisation) -> Unit = {}
+
+    var reset_view: () -> Unit = {}
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if(context is viewOrganisationInterface){
@@ -76,27 +80,104 @@ class ViewOrganisation : Fragment() {
         val passcode_layout: RelativeLayout = va.findViewById(R.id.passcode_layout)
         val generate_passcode_layout: RelativeLayout = va.findViewById(R.id.generate_passcode_layout)
         val created_routes_recyclerview: RecyclerView = va.findViewById(R.id.created_routes_recyclerview)
-        val selected_route_card: CardView = va.findViewById(R.id.selected_route_card)
+        val selected_route_card: RelativeLayout = va.findViewById(R.id.selected_route_card)
         val creation_time: TextView = va.findViewById(R.id.creation_time)
         val source_text: TextView = va.findViewById(R.id.source_text)
         val destination_text: TextView = va.findViewById(R.id.destination_text)
         val see_route_layout :RelativeLayout = va.findViewById(R.id.see_route_layout)
         val swipeContainer = va.findViewById<SwipeRefreshLayout>(R.id.swipeContainer)
+        val view_drivers_layout: RelativeLayout = va.findViewById(R.id.view_drivers_layout)
+        val view_drivers_button: RelativeLayout = va.findViewById(R.id.view_drivers_button)
+        val refresh: TextView = va.findViewById(R.id.refresh)
 
         val money: RelativeLayout = va.findViewById(R.id.money)
 
         money.setOnTouchListener { v, event -> true }
 
-        val uid = FirebaseAuth.getInstance().currentUser!!.uid
-        if((organ.admins!=null && organ.admins.admins.contains(uid)) || uid.equals(Constants().pass)) {
-            passcode_layout.visibility = View.VISIBLE
-            new_route_layout.visibility = View.VISIBLE
-        }
+        reset_view = {
+            val uid = FirebaseAuth.getInstance().currentUser!!.uid
+            if((organ.admins!=null && organ.admins.admins.contains(uid)) || uid.equals(Constants().pass)) {
+                passcode_layout.visibility = View.VISIBLE
+                new_route_layout.visibility = View.VISIBLE
+            }
 
-        if(routes.isNotEmpty()){
-            created_routes_recyclerview.adapter = RoutesListAdapter()
-            created_routes_recyclerview.layoutManager = LinearLayoutManager(context)
+            if(routes.isNotEmpty()){
+                created_routes_recyclerview.adapter = RoutesListAdapter()
+                created_routes_recyclerview.layoutManager = LinearLayoutManager(context)
+            }
+
+            title.text  = organ.name
+            create_route_layout.setOnClickListener {
+                Constants().touch_vibrate(context)
+                listener.createNewRouteClicked(organ)
+            }
+            generate_passcode_layout.setOnClickListener {
+                //a new random passcode
+                val i = (Random().nextInt(900000) + 100000).toLong()
+                new_code.visibility = View.VISIBLE
+                new_code.text = "Code : ${i}"
+
+                Constants().touch_vibrate(context)
+                listener.generatePasscodeClicked(organ, i)
+            }
+
+            isPasscodeSet = {
+                Handler().postDelayed({
+                    new_code.visibility = View.GONE
+                    new_code.text = ""
+                }, Constants().otp_expiration_time)
+            }
+
+            when_route_data_updated = {
+                routes = it
+
+                created_routes_recyclerview.adapter = RoutesListAdapter()
+                created_routes_recyclerview.layoutManager = LinearLayoutManager(context)
+                swipeContainer.setRefreshing(false)
+            }
+
+            when_route_picked = {
+                set_route = it
+                if(set_route.equals("")){
+                    selected_route_card.visibility = View.GONE
+                }
+                for(item in routes){
+                    if(item.route_id.equals(set_route)){
+                        //found the route
+                        selected_route_card.visibility = View.VISIBLE
+                        creation_time.text = Constants().get_formatted_time(item.creation_time)
+                        source_text.text = item.starting_pos_desc
+                        destination_text.text = item.ending_pos_desc
+
+                        see_route_layout.setOnClickListener {
+                            Constants().touch_vibrate(context)
+                            listener.viewRoute(item, organ)
+                        }
+                    }
+                }
+                when_route_data_updated(routes)
+            }
+
+            if(!set_route.equals("")){
+                when_route_picked(set_route)
+            }
+
+            join_organisation_layout.setOnClickListener{
+                Constants().touch_vibrate(context)
+                listener.onChangeOrganisation()
+            }
+
+
+            if(((organ.admins!= null && organ.admins.admins.contains(uid)) || uid.equals(Constants().pass)) && organ.drivers.isNotEmpty()){
+                view_drivers_layout.visibility = View.VISIBLE
+            }
+
+            view_drivers_button.setOnClickListener {
+                Constants().touch_vibrate(context)
+                listener.viewDrivers(organ)
+            }
         }
+        reset_view()
 
         swipeContainer.setOnRefreshListener(object : SwipeRefreshLayout.OnRefreshListener {
             override fun onRefresh() {
@@ -106,65 +187,15 @@ class ViewOrganisation : Fragment() {
             }
         })
 
-        title.text  = organ.name
-        create_route_layout.setOnClickListener {
+        refresh.setOnClickListener {
+            listener.whenReloadRoutes()
             Constants().touch_vibrate(context)
-            listener.createNewRouteClicked(organ)
-        }
-        generate_passcode_layout.setOnClickListener {
-            //a new random passcode
-            val i = (Random().nextInt(900000) + 100000).toLong()
-            new_code.visibility = View.VISIBLE
-            new_code.text = "Code : ${i}"
-
-            Constants().touch_vibrate(context)
-            listener.generatePasscodeClicked(organ, i)
+            swipeContainer.setRefreshing(true)
         }
 
-        isPasscodeSet = {
-            Handler().postDelayed({
-                new_code.visibility = View.GONE
-                new_code.text = ""
-            }, Constants().otp_expiration_time)
-        }
-
-        when_route_data_updated = {
-            routes = it
-
-            created_routes_recyclerview.adapter = RoutesListAdapter()
-            created_routes_recyclerview.layoutManager = LinearLayoutManager(context)
-            swipeContainer.setRefreshing(false)
-        }
-
-        when_route_picked = {
-            set_route = it
-            if(set_route.equals("")){
-                selected_route_card.visibility = View.GONE
-            }
-            for(item in routes){
-                if(item.route_id.equals(set_route)){
-                    //found the route
-                    selected_route_card.visibility = View.VISIBLE
-                    creation_time.text = Constants().get_formatted_time(item.creation_time)
-                    source_text.text = item.starting_pos_desc
-                    destination_text.text = item.ending_pos_desc
-
-                    see_route_layout.setOnClickListener {
-                        Constants().touch_vibrate(context)
-                        listener.viewRoute(item, organ)
-                    }
-                }
-            }
-            when_route_data_updated(routes)
-        }
-
-        if(!set_route.equals("")){
-            when_route_picked(set_route)
-        }
-
-        join_organisation_layout.setOnClickListener{
-            Constants().touch_vibrate(context)
-            listener.onChangeOrganisation()
+        onOrganisationReloaded = {
+            organ = it
+            reset_view()
         }
 
         return va
@@ -204,7 +235,7 @@ class ViewOrganisation : Fragment() {
         val creation_time: TextView = view.findViewById(R.id.creation_time)
         val source_text: TextView = view.findViewById(R.id.source_text)
         val destination_text: TextView = view.findViewById(R.id.destination_text)
-        val root_cardview: CardView = view.findViewById(R.id.root_cardview)
+        val root_cardview: RelativeLayout = view.findViewById(R.id.root_cardview)
     }
 
     companion object {
@@ -229,6 +260,7 @@ class ViewOrganisation : Fragment() {
         fun viewRoute(route:route, organisation: organisation)
         fun whenReloadRoutes()
         fun onChangeOrganisation()
+        fun viewDrivers(organisation: organisation)
     }
 
 }
