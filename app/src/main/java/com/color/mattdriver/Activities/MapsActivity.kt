@@ -249,6 +249,7 @@ class MapsActivity : AppCompatActivity(),
 
     }
 
+    private var doubleBackToExitPressedOnce = false
     override fun onBackPressed() {
         if(is_location_picker_open){
             close_location_picker()
@@ -269,7 +270,17 @@ class MapsActivity : AppCompatActivity(),
                     show_normal_home_items()
                 }
 
-            } else super.onBackPressed()
+            } else {
+                if (doubleBackToExitPressedOnce) {
+                    super.onBackPressed()
+                    return
+                }
+
+                this.doubleBackToExitPressedOnce = true
+                Toast.makeText(this, "Press BACK again to exit", Toast.LENGTH_SHORT).show()
+
+                Handler().postDelayed(Runnable { doubleBackToExitPressedOnce = false }, 2000)
+            }
         }
     }
 
@@ -919,8 +930,11 @@ class MapsActivity : AppCompatActivity(),
 
         binding.searchPlace.setOnClickListener{
             Constants().touch_vibrate(applicationContext)
+            val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()
             val fields: List<Place.Field> = Arrays.asList(Place.Field.NAME, Place.Field.LAT_LNG)
-            val intent: Intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields).build(this)
+            val intent: Intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields)
+                .setCountry(user!!.phone.country_name_code)
+                .build(this)
             startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE)
         }
 
@@ -1818,14 +1832,14 @@ class MapsActivity : AppCompatActivity(),
             add_marker(get_active_route()!!.set_start_pos!!, constants.start_loc, constants.start_loc)
             add_marker(get_active_route()!!.set_end_pos!!, constants.end_loc, constants.end_loc)
             for (item in get_active_route()!!.added_bus_stops) {
-                add_marker(item.stop_location, constants.stop_loc, constants.stop_loc)
+                add_marker(item.stop_location, constants.stop_loc, item.creation_time.toString())
             }
-//            show_all_markers()
+            Handler().postDelayed({ show_all_markers() }, 500)
 
-            val new_lat_lng = LatLng(get_active_route()!!.set_start_pos!!.latitude, get_active_route()!!.set_start_pos!!.longitude)
-            val zoom = mMap.cameraPosition.zoom
-
-            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new_lat_lng, zoom))
+//            val new_lat_lng = LatLng(get_active_route()!!.set_start_pos!!.latitude, get_active_route()!!.set_start_pos!!.longitude)
+//            val zoom = mMap.cameraPosition.zoom
+//
+//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new_lat_lng, zoom))
         }
     }
 
@@ -2036,11 +2050,12 @@ class MapsActivity : AppCompatActivity(),
 
             val creation_time = Calendar.getInstance().timeInMillis
 
+
             val data = hashMapOf(
                 "pos_id" to new_pos.id,
                 "creation_time" to creation_time,
                 "user" to user.uid,
-                "loc" to Gson().toJson(pos),
+                "loc" to Gson().toJson(get_closest_point_to_route(get_active_route()!!, pos)),
                 "organisation" to get_active_org()!!.org_id!!,
                 "route" to get_active_route()!!.route_id
             )

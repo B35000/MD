@@ -15,8 +15,6 @@ import com.color.mattdriver.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
 
 class ViewRoute : Fragment() {
     // TODO: Rename and change types of parameters
