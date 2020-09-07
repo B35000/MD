@@ -89,6 +89,8 @@ class ViewOrganisation : Fragment() {
         val view_drivers_layout: RelativeLayout = va.findViewById(R.id.view_drivers_layout)
         val view_drivers_button: RelativeLayout = va.findViewById(R.id.view_drivers_button)
         val refresh: TextView = va.findViewById(R.id.refresh)
+        val view_all_routes_layout_button: RelativeLayout = va.findViewById(R.id.view_all_routes_layout_button)
+        val view_all_routes_layout: RelativeLayout = va.findViewById(R.id.view_all_routes_layout)
 
         val money: RelativeLayout = va.findViewById(R.id.money)
 
@@ -198,6 +200,15 @@ class ViewOrganisation : Fragment() {
             reset_view()
         }
 
+        if(!routes.isEmpty()){
+            view_all_routes_layout.visibility = View.VISIBLE
+        }
+
+        view_all_routes_layout_button.setOnClickListener {
+            Constants().touch_vibrate(context)
+            listener.viewAllRoutes()
+        }
+
         return va
     }
 
@@ -225,7 +236,7 @@ class ViewOrganisation : Fragment() {
         }
 
         override fun getItemCount():Int {
-            return routes.size
+            return routes.size*0
         }
 
     }
@@ -261,6 +272,7 @@ class ViewOrganisation : Fragment() {
         fun whenReloadRoutes()
         fun onChangeOrganisation()
         fun viewDrivers(organisation: organisation)
+        fun viewAllRoutes()
     }
 
 }

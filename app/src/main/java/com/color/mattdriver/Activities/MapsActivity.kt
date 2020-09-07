@@ -82,7 +82,8 @@ class MapsActivity : AppCompatActivity(),
     MainSettings.MainSettingsInterface,
     SignUp.SignUpInterface,
     SignIn.SignInInterface,
-    Drivers.DriversInterface
+    Drivers.DriversInterface,
+    ViewAllRoutes.ViewAllRoutesInterface
 {
     val TAG = "MapsActivity"
     val _welcome = "_welcome"
@@ -95,6 +96,7 @@ class MapsActivity : AppCompatActivity(),
     val _sign_up = "sign_up"
     val _sign_in = "_sign_in"
     val _view_drivers = "_view_drivers"
+    val _view_all_routes = "_view_all_routes"
 
     private lateinit var binding: ActivityMapsBinding
     private lateinit var mMap: GoogleMap
@@ -395,7 +397,7 @@ class MapsActivity : AppCompatActivity(),
                 ) {
                     set_up_getting_my_location()
                 } else {
-                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -534,6 +536,10 @@ class MapsActivity : AppCompatActivity(),
                         (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
                             .onOrganisationReloaded(get_active_org()!!)
                     }
+                    if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null){
+                        (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes)
+                            .onOrganisationReloaded(get_active_org()!!)
+                    }
                 }
             }
     }
@@ -576,6 +582,10 @@ class MapsActivity : AppCompatActivity(),
                             (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
                                 .onOrganisationReloaded(get_active_org()!!)
                         }
+                        if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null){
+                            (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes)
+                                .onOrganisationReloaded(get_active_org()!!)
+                        }
                     }
                     whenNetworkAvailable()
                 }.addOnFailureListener{
@@ -608,6 +618,10 @@ class MapsActivity : AppCompatActivity(),
                 store_session_data()
                 if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null && get_active_org()!=null){
                     (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                        .when_route_data_updated(load_my_organisations_routes(get_active_org()!!))
+                }
+                if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null && get_active_org()!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes)
                         .when_route_data_updated(load_my_organisations_routes(get_active_org()!!))
                 }
             }
@@ -806,6 +820,28 @@ class MapsActivity : AppCompatActivity(),
     }
 
     override fun createNewRouteClicked(organisation: organisation) {
+        remove_all_added_pins()
+        remove_drawn_route()
+
+        added_bus_stops.clear()
+        set_start_pos = null
+        set_start_pos_desc = ""
+        set_start_pos_id = ""
+        start_pos_geo_data= null
+
+        set_end_pos= null
+        set_end_pos_desc = ""
+        set_end_pos_id = ""
+        end_pos_geo_data= null
+        drawn_polyline.clear()
+        route_directions_data = null
+
+        binding.setBusStopTextview.text = getString(R.string.add_a_stop)
+        binding.addRouteIcon.setImageResource(R.drawable.add_icon)
+        is_picking_stop_location = false
+        is_picking_source_location = false
+        is_picking_destination_location = false
+
         openRouteCreater(organisation)
     }
 
@@ -855,6 +891,14 @@ class MapsActivity : AppCompatActivity(),
         val org = Gson().toJson(organisation)
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
             .add(binding.money.id, Drivers.newInstance("","", org),_view_drivers).commit()
+    }
+
+    override fun viewAllRoutes() {
+        var org_string = Gson().toJson(get_active_org())
+        var route_string = Gson().toJson(route.route_list(load_my_organisations_routes(get_active_org()!!)))
+
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .add(binding.money.id,ViewAllRoutes.newInstance("","",org_string,route_string,active_route),_view_all_routes).commit()
     }
 
     fun store_session_data(){
@@ -975,7 +1019,7 @@ class MapsActivity : AppCompatActivity(),
         load_bus_stop_adapter()
 
         binding.setStartingLayout.setOnClickListener {
-            if(is_picking_destination_location) onBackPressed()
+            if(is_picking_destination_location || is_picking_stop_location) onBackPressed()
             open_location_picker()
             if(is_picking_source_location){
                 Constants().touch_vibrate(applicationContext)
@@ -1006,7 +1050,7 @@ class MapsActivity : AppCompatActivity(),
         }
 
         binding.setEndingLayout.setOnClickListener {
-            if(is_picking_source_location) onBackPressed()
+            if(is_picking_source_location || is_picking_stop_location) onBackPressed()
             open_location_picker()
             if(is_picking_destination_location){
                 Constants().touch_vibrate(applicationContext)
@@ -1038,6 +1082,7 @@ class MapsActivity : AppCompatActivity(),
         }
 
         binding.addStopLayout.setOnClickListener {
+            if(is_picking_source_location || is_picking_destination_location) onBackPressed()
             open_location_picker()
             if(is_picking_stop_location){
                 Constants().touch_vibrate(applicationContext)
@@ -1552,6 +1597,11 @@ class MapsActivity : AppCompatActivity(),
                     .when_route_data_updated(load_my_organisations_routes(organisation))
             }
 
+            if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null){
+                (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes)
+                    .when_route_data_updated(load_my_organisations_routes(organisation))
+            }
+
             //remove all the markers on the map
             for(item in added_markers.values){
                 item.remove()
@@ -1614,6 +1664,11 @@ class MapsActivity : AppCompatActivity(),
             }
             if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
                 (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                    .when_route_data_updated(load_my_organisations_routes(organisation))
+            }
+
+            if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null){
+                (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes)
                     .when_route_data_updated(load_my_organisations_routes(organisation))
             }
 
@@ -1753,6 +1808,9 @@ class MapsActivity : AppCompatActivity(),
         onBackPressed()
         if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
             (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation).when_route_picked(active_route)
+        }
+        if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null){
+            (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes).when_route_picked(active_route)
         }
         when_active_route_set()
         load_active_route_on_map()
@@ -2332,6 +2390,19 @@ class MapsActivity : AppCompatActivity(),
                 hideLoadingScreen()
                 Toast.makeText(applicationContext,"something went wrong",Toast.LENGTH_SHORT).show()
             }
+    }
+
+    override fun whenViewAllRoutesReloadRoutes() {
+        load_routes()
+        load_organisations()
+    }
+
+    override fun whenViewAllRoutesViewRoute(route: route, organisation: organisation) {
+        var org_string = Gson().toJson(organisation)
+        var route_string = Gson().toJson(route)
+        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+            .add(binding.money.id,ViewRoute.newInstance("","",org_string,route_string,active_route),_view_route).commit()
+
     }
 
 
