@@ -56,5 +56,6 @@
     <string name="please_fill_this">please fill this</string>
     <string name="sign_up_instead">Sign up instead</string>
     <string name="sign_in_instead">Sign in instead</string>
+    <string name="more">More</string>
 
 </resources>

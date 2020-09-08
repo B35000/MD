@@ -127,7 +127,7 @@ class ViewAllRoutes : Fragment() {
         override fun onBindViewHolder(v: ViewHolderRoutes, position: Int) {
             val route = routes.get(position)
             if(route.route_id.equals(set_route)){
-                v.root_cardview.visibility = View.GONE
+                v.view_layout.visibility = View.GONE
             }
             v.creation_time.text = "${Constants().get_formatted_time(route.creation_time)}"
             v.source_text.text = route.starting_pos_desc

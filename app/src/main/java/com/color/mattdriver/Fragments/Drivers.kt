@@ -64,10 +64,12 @@ class Drivers : Fragment() {
         val va = inflater.inflate(R.layout.fragment_drivers, container, false)
         val money: RelativeLayout = va.findViewById(R.id.money)
         val drivers_recyclerview: RecyclerView = va.findViewById(R.id.drivers_recyclerview)
+        val title: TextView = va.findViewById(R.id.title)
 
         money.setOnTouchListener { v, event -> true }
 
         reset_view = {
+            title.text = "${organ.name} drivers."
             drivers_recyclerview.adapter = DriversListAdapter()
             drivers_recyclerview.layoutManager = LinearLayoutManager(context)
         }
@@ -95,7 +97,8 @@ class Drivers : Fragment() {
                 v.root.visibility = View.GONE
             }
 
-            v.creation_time.text = "Joined ${Constants().get_formatted_time(drivr.joining_time)}"
+            v.creation_time.text = "Joined ${Constants().get_formatted_time_without_time_of_day(drivr.joining_time)}"
+            v.join_time.text = "At ${Constants().get_formatted_time_of_day(drivr.joining_time)}"
             v.coutry_text.text = organ.country
 
             if(organ.admins!=null && organ.admins.admins.contains(drivr.driver_id)){
@@ -133,6 +136,7 @@ class Drivers : Fragment() {
         val deactivate_switch: Switch = view.findViewById(R.id.deactivate_switch)
         val deactivate_driver_layout: RelativeLayout = view.findViewById(R.id.deactivate_driver_layout)
         val admin_switch: Switch = view.findViewById(R.id.admin_switch)
+        val join_time: TextView = view.findViewById(R.id.join_time)
 
     }
 

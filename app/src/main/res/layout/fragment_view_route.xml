@@ -191,14 +191,14 @@
                         android:textSize="16sp"
                         android:textColor="@color/colorAccent"
                         android:layout_height="wrap_content"
-                        android:text="Edit" />
+                        android:text="View on Map" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_marginTop="5dp"
                         android:textSize="13sp"
                         android:layout_height="wrap_content"
-                        android:text="Edit the route" />
+                        android:text="View or edit the route" />
 
                 </LinearLayout>
 

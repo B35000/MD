@@ -206,7 +206,7 @@
                                 android:layout_marginTop="5dp"
                                 android:textSize="13sp"
                                 android:layout_height="wrap_content"
-                                android:text="View all the routes you've created." />
+                                android:text="View all the routes created." />
 
                         </LinearLayout>
 

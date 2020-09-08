@@ -1029,6 +1029,19 @@ class MapsActivity : AppCompatActivity(),
 
     fun openRouteCreater(organisation: organisation){
         binding.finishCreateRoute.visibility = View.GONE
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        if((organisation.admins!=null && organisation.admins.admins.contains(uid)) || uid.equals(Constants().pass)) {
+            binding.finishCreateLayout.visibility = View.VISIBLE
+            binding.addStopLayout.visibility = View.VISIBLE
+            binding.setEndingLayout.visibility = View.VISIBLE
+            binding.setStartingLayout.visibility = View.VISIBLE
+        }else{
+            binding.finishCreateLayout.visibility = View.GONE
+            binding.addStopLayout.visibility = View.GONE
+            binding.setEndingLayout.visibility = View.GONE
+            binding.setStartingLayout.visibility = View.GONE
+        }
+
         hide_normal_home_items()
         if(viewing_route!=null){
             load_my_route(viewing_route!!)
@@ -1351,10 +1364,15 @@ class MapsActivity : AppCompatActivity(),
                     }
 
                 }else{
-                    v.delete_icon.visibility = View.VISIBLE
-                    selected_stop = stop.creation_time.toString()
+                    val uid = FirebaseAuth.getInstance().currentUser!!.uid
+                    if((get_active_org()!=null && get_active_org()!!.admins!=null && get_active_org()!!.admins.admins.contains(uid)) ||
+                        uid.equals(Constants().pass)) {
+                        v.delete_icon.visibility = View.VISIBLE
+                        selected_stop = stop.creation_time.toString()
+                    }
                     mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(stop.stop_location.latitude,
                         stop.stop_location.longitude), mMap.cameraPosition.zoom))
+
                 }
                 load_bus_stop_adapter()
             }

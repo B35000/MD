@@ -128,8 +128,40 @@ class Constants {
         val day = cal.get(Calendar.DAY_OF_MONTH)
         val month = cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault());
         val year = cal.get(Calendar.YEAR)
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        var minute = cal.get(Calendar.MINUTE)
+        var minn = minute.toString()
+        if(minute<10) minn = "0${minn}"
+
+        return "${day} ${month}, ${year}; ${hour}:${minn}"
+
+    }
+
+    fun get_formatted_time_without_time_of_day(time: Long): String{
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = time
+
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        val month = cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault());
+        val year = cal.get(Calendar.YEAR)
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        var minute = cal.get(Calendar.MINUTE)
+        var minn = minute.toString()
+        if(minute<10) minn = "0${minn}"
 
         return "${day} ${month}, ${year}"
+
+    }
+
+    fun get_formatted_time_of_day(time: Long): String{
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = time
+        val hour = cal.get(Calendar.HOUR_OF_DAY)
+        var minute = cal.get(Calendar.MINUTE)
+        var minn = minute.toString()
+        if(minute<10) minn = "0${minn}"
+
+        return "${hour}:${minn}"
 
     }
 
