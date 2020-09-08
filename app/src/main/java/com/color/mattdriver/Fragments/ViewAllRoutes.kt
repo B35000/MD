@@ -82,7 +82,7 @@ class ViewAllRoutes : Fragment() {
             }
             title.text  = organ.name
             when_route_data_updated = {
-                routes = it
+                routes = sorted_routes(it)
 
                 created_routes_recyclerview.adapter = RoutesListAdapter()
                 created_routes_recyclerview.layoutManager = LinearLayoutManager(context)

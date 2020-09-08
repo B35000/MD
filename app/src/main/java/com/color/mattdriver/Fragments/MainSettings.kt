@@ -11,7 +11,6 @@ import android.widget.Switch
 import android.widget.TextView
 import com.color.mattdriver.Constants
 import com.color.mattdriver.R
-import kotlin.math.sign
 
 
 class MainSettings : Fragment() {
@@ -45,7 +44,7 @@ class MainSettings : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         val va = inflater.inflate(R.layout.fragment_main_settings, container, false)
-        val night_mode_switch: Switch = va.findViewById(R.id.night_mode_switch)
+        val night_mode_switch: Switch = va.findViewById(R.id.share_location_switch)
         val dark_mode_text: TextView = va.findViewById(R.id.dark_mode_text)
         val join_organisation_layout: RelativeLayout = va.findViewById(R.id.join_organisation_layout)
         val sign_in_layout: RelativeLayout = va.findViewById(R.id.sign_in_layout)

@@ -2,7 +2,6 @@ package com.color.mattdriver.Fragments
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.RelativeLayout
 import android.widget.Switch
 import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
 import com.color.mattdriver.Constants
 import com.color.mattdriver.R
 
@@ -48,7 +46,7 @@ class Welcome : Fragment() {
         val mView = inflater.inflate(R.layout.fragment_welcome, container, false)
 
         val dark_mode_text: TextView = mView.findViewById(R.id.dark_mode_text)
-        val night_mode_switch: Switch = mView.findViewById(R.id.night_mode_switch)
+        val night_mode_switch: Switch = mView.findViewById(R.id.share_location_switch)
         val begin_layout = mView.findViewById<RelativeLayout>(R.id.begin_layout)
         val money: RelativeLayout = mView.findViewById(R.id.money)
 

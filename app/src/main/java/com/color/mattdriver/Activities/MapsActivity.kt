@@ -219,15 +219,15 @@ class MapsActivity : AppCompatActivity(),
         Places.initialize(applicationContext, Apis().places_api_key)
         val placesClient: PlacesClient = Places.createClient(this)
 
-        binding.nightModeSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+        binding.shareLocationSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
             constants.touch_vibrate(applicationContext)
             can_share_location = isChecked
             if(isChecked){
-                binding.darkModeText.text = "Stop sharing location"
+                binding.shareLocationText.text = "Stop sharing location"
                 load_notification()
                 binding.busIcon.setImageResource(R.drawable.bus_loc_shared)
             }else{
-                binding.darkModeText.text = "Start sharing location"
+                binding.shareLocationText.text = "Start sharing location"
                 remove_notification()
                 binding.busIcon.setImageResource(R.drawable.bus_loc)
             }
@@ -237,7 +237,14 @@ class MapsActivity : AppCompatActivity(),
         when_active_route_set()
 
         createNotificationChannel()
-//        load_notification()
+        binding.busIcon.setOnClickListener {
+            move_camera_to_my_location()
+        }
+        binding.title.setOnClickListener {
+            if(get_active_route()!=null){
+                show_all_markers()
+            }
+        }
     }
 
     fun open_welcome_fragment(){
@@ -287,8 +294,9 @@ class MapsActivity : AppCompatActivity(),
     }
 
     fun removing_fragment_notifier(tag: String){
-        if(tag.equals(_view_organisation)){
+        if(tag.equals(_view_organisation) || tag.equals(_view_all_routes)){
             if(viewing_route!=null){
+                open_route_info_with_anim = false
                 viewRoute(viewing_route!!, get_active_org()!!)
             }
             viewing_route = null
@@ -864,11 +872,20 @@ class MapsActivity : AppCompatActivity(),
 
     }
 
+    var open_route_info_with_anim = true
     override fun viewRoute(route: route, organisation: organisation) {
         var org_string = Gson().toJson(organisation)
         var route_string = Gson().toJson(route)
-        supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-            .add(binding.money.id,ViewRoute.newInstance("","",org_string,route_string,active_route),_view_route).commit()
+
+        if(open_route_info_with_anim) {
+            supportFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                .add(binding.money.id, ViewRoute.newInstance("", "", org_string, route_string, active_route), _view_route).commit()
+        }else{
+            open_route_info_with_anim = true
+            supportFragmentManager.beginTransaction()
+                .add(binding.money.id, ViewRoute.newInstance("", "", org_string, route_string, active_route), _view_route).commit()
+        }
 
     }
 
@@ -1011,6 +1028,7 @@ class MapsActivity : AppCompatActivity(),
     }
 
     fun openRouteCreater(organisation: organisation){
+        binding.finishCreateRoute.visibility = View.GONE
         hide_normal_home_items()
         if(viewing_route!=null){
             load_my_route(viewing_route!!)
@@ -1171,6 +1189,8 @@ class MapsActivity : AppCompatActivity(),
         if(set_end_pos!=null && set_start_pos!=null){
             binding.finishCreateRoute.visibility = View.VISIBLE
         }
+
+        show_all_markers()
     }
 
     var is_location_picker_open = false
@@ -1202,6 +1222,7 @@ class MapsActivity : AppCompatActivity(),
             binding.finishCreateRoute.visibility = View.VISIBLE
         }
         load_my_location_on_map()
+        show_all_markers()
     }
 
     override fun onMyLocationButtonClick(): Boolean {
@@ -1817,10 +1838,34 @@ class MapsActivity : AppCompatActivity(),
         Toast.makeText(applicationContext,"Done!", Toast.LENGTH_SHORT).show()
     }
 
+    var is_edit_route_opened = false
     override fun whenEditRoute(route: route, organisation: organisation) {
+        remove_all_added_pins()
+        remove_drawn_route()
+
+        added_bus_stops.clear()
+        set_start_pos = null
+        set_start_pos_desc = ""
+        set_start_pos_id = ""
+        start_pos_geo_data= null
+
+        set_end_pos= null
+        set_end_pos_desc = ""
+        set_end_pos_id = ""
+        end_pos_geo_data= null
+        drawn_polyline.clear()
+        route_directions_data = null
+
+        binding.setBusStopTextview.text = getString(R.string.add_a_stop)
+        binding.addRouteIcon.setImageResource(R.drawable.add_icon)
+        is_picking_stop_location = false
+        is_picking_source_location = false
+        is_picking_destination_location = false
+
         viewing_route = route
         onBackPressed()
         openRouteCreater(organisation)
+        is_edit_route_opened = true
     }
 
     fun get_active_org(): organisation?{
@@ -1852,12 +1897,10 @@ class MapsActivity : AppCompatActivity(),
             binding.title.text = "Route"
             binding.destinationTextview.text = "To: ${active_route.ending_pos_desc}"
             store_session_data()
+
+            show_all_markers()
         }
     }
-
-
-
-
 
     fun when_active_org_set(){
         if(get_active_org()!=null){
@@ -1964,6 +2007,17 @@ class MapsActivity : AppCompatActivity(),
                 my_marker_trailing_markers.add(circle)
             }
         }
+    }
+
+    fun move_camera_to_my_location(){
+        if(mLastKnownLocations.isNotEmpty()) {
+            val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
+            move_camera(LatLng(last_loc.latitude, last_loc.longitude))
+        }
+    }
+
+    fun move_camera(pos: LatLng){
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, mMap.cameraPosition.zoom))
     }
 
     fun remove_my_location_on_map(){
