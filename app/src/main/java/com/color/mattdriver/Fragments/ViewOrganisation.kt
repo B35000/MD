@@ -1,13 +1,16 @@
 package com.color.mattdriver.Fragments
 
 import android.content.Context
+import android.location.Location
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RelativeLayout
+import android.widget.Switch
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +25,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 
 class ViewOrganisation : Fragment() {
@@ -35,6 +39,7 @@ class ViewOrganisation : Fragment() {
     private val ARG_ORGANISATION = "ARG_ORGANISATION"
     private lateinit var listener: viewOrganisationInterface
     private var routes: ArrayList<route> = ArrayList()
+    private var routes_pos: HashMap<String,Int> = HashMap()
     private lateinit var organ: organisation
     private var set_route : String = ""
 
@@ -58,6 +63,8 @@ class ViewOrganisation : Fragment() {
     var onOrganisationReloaded: (organisation) -> Unit = {}
 
     var reset_view: () -> Unit = {}
+
+    var when_route_disabled: (is_disabled: Boolean, route: route) -> Unit = { b: Boolean, route: route -> }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -91,12 +98,20 @@ class ViewOrganisation : Fragment() {
         val refresh: TextView = va.findViewById(R.id.refresh)
         val view_all_routes_layout_button: RelativeLayout = va.findViewById(R.id.view_all_routes_layout_button)
         val view_all_routes_layout: RelativeLayout = va.findViewById(R.id.view_all_routes_layout)
-
+        val stops_text: TextView = va.findViewById(R.id.stops_text)
+        val auto_change_layout: RelativeLayout = va.findViewById(R.id.auto_change_layout)
+        val auto_swap_switch: Switch = va.findViewById(R.id.auto_swap_switch)
+        val swap_origin_textview: TextView = va.findViewById(R.id.swap_origin_textview)
+        val swap_destination_textview: TextView = va.findViewById(R.id.swap_destination_textview)
         val money: RelativeLayout = va.findViewById(R.id.money)
 
         money.setOnTouchListener { v, event -> true }
 
         reset_view = {
+            for(item in routes) {
+                routes_pos.put(item.route_id, routes.indexOf(item))
+            }
+
             val uid = FirebaseAuth.getInstance().currentUser!!.uid
             if((organ.admins!=null && organ.admins.admins.contains(uid)) || uid.equals(Constants().pass)) {
                 passcode_layout.visibility = View.VISIBLE
@@ -139,22 +154,43 @@ class ViewOrganisation : Fragment() {
             }
 
             when_route_picked = {
+                auto_swap_switch.setOnCheckedChangeListener { compoundButton, b ->}
                 set_route = it
                 if(set_route.equals("")){
                     selected_route_card.visibility = View.GONE
+                    auto_change_layout.visibility = View.GONE
                 }
-                for(item in routes){
-                    if(item.route_id.equals(set_route)){
-                        //found the route
-                        selected_route_card.visibility = View.VISIBLE
-                        creation_time.text = Constants().get_formatted_time(item.creation_time)
-                        source_text.text = item.starting_pos_desc
-                        destination_text.text = item.ending_pos_desc
 
-                        see_route_layout.setOnClickListener {
+                val item  = routes.get(routes_pos.get(set_route)!!)
+                if(item.route_id.equals(set_route)){
+                    //found the route
+                    selected_route_card.visibility = View.VISIBLE
+                    creation_time.text = Constants().get_formatted_time(item.creation_time)
+                    source_text.text = "${item.starting_pos_desc}"
+                    destination_text.text = "${item.ending_pos_desc}"
+
+                    val mirror = get_mirror_route(item)
+                    if(!mirror.route_id.equals(item.route_id)){
+                        auto_change_layout.visibility = View.VISIBLE
+                        swap_origin_textview.text = "From: ${mirror.starting_pos_desc}"
+                        swap_destination_textview.text = "To: ${mirror.ending_pos_desc}"
+
+                        auto_swap_switch.isChecked = Constants().SharedPreferenceManager(context!!).can_auto_swapp_route()
+                        auto_swap_switch.setOnCheckedChangeListener { compoundButton, b ->
                             Constants().touch_vibrate(context)
-                            listener.viewRoute(item, organ)
+                            Constants().SharedPreferenceManager(context!!).auto_swapp_route(b)
                         }
+                    }
+
+                    if(item.added_bus_stops.isNotEmpty()){
+                        stops_text.text = item.added_bus_stops.size.toString()+" Stop"
+                        if(item.added_bus_stops.size>1){
+                            stops_text.text = item.added_bus_stops.size.toString()+" Stops"
+                        }
+                    }
+                    see_route_layout.setOnClickListener {
+                        Constants().touch_vibrate(context)
+                        listener.viewRoute(item, organ)
                     }
                 }
                 when_route_data_updated(routes)
@@ -178,6 +214,7 @@ class ViewOrganisation : Fragment() {
                 Constants().touch_vibrate(context)
                 listener.viewDrivers(organ)
             }
+
         }
         reset_view()
 
@@ -209,7 +246,38 @@ class ViewOrganisation : Fragment() {
             listener.viewAllRoutes()
         }
 
+        when_route_disabled = { is_disabled: Boolean, route: route ->
+            for(item in routes){
+                if(item.route_id.equals(route.route_id)){
+                    item.disabled = is_disabled
+                }
+            }
+            if(routes.isNotEmpty()){
+                created_routes_recyclerview.adapter = RoutesListAdapter()
+                created_routes_recyclerview.layoutManager = LinearLayoutManager(context)
+            }
+        }
+
         return va
+    }
+
+    fun get_mirror_route(route: route): route{
+        for(item in routes){
+            if(!item.route_id.equals(route.route_id)){
+                val start_end = Constants().distance_km(item.set_start_pos!!.latitude,item.set_start_pos!!.longitude,
+                    route.set_end_pos!!.latitude,route.set_end_pos!!.longitude)
+                Log.e("ViewOrg", "start_end: ${start_end}")
+
+                val end_start =  Constants().distance_km(route.set_start_pos!!.latitude,route.set_start_pos!!.longitude,
+                    item.set_end_pos!!.latitude,item.set_end_pos!!.longitude)
+                Log.e("ViewOrg", "end_start: ${end_start}")
+
+                if(start_end<=Constants().closeness_limit && end_start<=Constants().closeness_limit){
+                    return item
+                }
+            }
+        }
+        return route
     }
 
 

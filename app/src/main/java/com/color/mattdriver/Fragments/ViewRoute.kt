@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RelativeLayout
+import android.widget.Switch
 import android.widget.TextView
 import com.color.mattdriver.Constants
 import com.color.mattdriver.Models.organisation
@@ -52,6 +53,8 @@ class ViewRoute : Fragment() {
 
     var when_route_picked: (route: String) -> Unit = {}
 
+    var when_route_disabled: (is_disabled: Boolean) -> Unit = {}
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -65,6 +68,8 @@ class ViewRoute : Fragment() {
         val organisation_name: TextView = va.findViewById(R.id.organisation_name)
         val edit_route_layout: RelativeLayout = va.findViewById(R.id.edit_route_layout)
         val edit_layout: RelativeLayout = va.findViewById(R.id.edit_layout)
+        val remove_route_switch: Switch = va.findViewById(R.id.remove_route_switch)
+        val disable_layout: RelativeLayout = va.findViewById(R.id.disable_layout)
 
         val money: RelativeLayout = va.findViewById(R.id.money)
 
@@ -95,11 +100,23 @@ class ViewRoute : Fragment() {
         val uid = FirebaseAuth.getInstance().currentUser!!.uid
         if((my_organisation.admins!=null && my_organisation.admins.admins.contains(uid)) || uid.equals(Constants().pass)) {
             edit_layout.visibility = View.VISIBLE
+            disable_layout.visibility = View.VISIBLE
         }
 
         edit_route_layout.setOnClickListener {
             Constants().touch_vibrate(context)
             listener.whenEditRoute(my_route,my_organisation)
+        }
+
+        remove_route_switch.isChecked = my_route.disabled
+
+        remove_route_switch.setOnCheckedChangeListener { compoundButton, b ->
+            Constants().touch_vibrate(context)
+            listener.whenDisableRoute(b,my_route,my_organisation)
+        }
+
+        when_route_disabled = {
+            my_route.disabled = it
         }
 
         return va
@@ -122,5 +139,6 @@ class ViewRoute : Fragment() {
     interface ViewRouteInterface{
         fun whenSetRoute(route: route,organisation: organisation)
         fun whenEditRoute(route: route,organisation: organisation)
+        fun whenDisableRoute(is_disabled: Boolean, route: route,organisation: organisation)
     }
 }

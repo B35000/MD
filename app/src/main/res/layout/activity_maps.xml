@@ -107,7 +107,6 @@
 
             </RelativeLayout>
 
-
             <RelativeLayout
                 android:id="@+id/bottom_sheet_layout"
                 android:layout_width="match_parent"

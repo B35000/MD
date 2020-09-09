@@ -218,6 +218,11 @@ class SplashActivity : AppCompatActivity() {
                         val creater = item["creater"] as String
 
                         val route = Gson().fromJson(item["route"].toString(), route::class.java)
+                        var disabled = false
+                        if(item.contains("disabled")){
+                            disabled = item["disabled"] as Boolean
+                        }
+                        route.disabled = disabled
 
                         routes.add(route)
                     }

@@ -133,6 +133,14 @@ class ViewAllRoutes : Fragment() {
             v.source_text.text = route.starting_pos_desc
             v.destination_text.text = route.ending_pos_desc
 
+            if(!route.added_bus_stops.isEmpty()){
+                v.stops_text.visibility = View.VISIBLE
+            }
+            v.stops_text.text = route.added_bus_stops.size.toString()+" Stop"
+            if(route.added_bus_stops.size>1){
+                v.stops_text.text = route.added_bus_stops.size.toString()+" Stops"
+            }
+
             v.view_layout.setOnClickListener {
                 Constants().touch_vibrate(context)
                 listener.whenViewAllRoutesViewRoute(route,organ)
@@ -158,6 +166,7 @@ class ViewAllRoutes : Fragment() {
         val source_text: TextView = view.findViewById(R.id.source_text)
         val destination_text: TextView = view.findViewById(R.id.destination_text)
         val root_cardview: RelativeLayout = view.findViewById(R.id.root_cardview)
+        val stops_text: TextView = view.findViewById(R.id.stops_text)
     }
 
     companion object {

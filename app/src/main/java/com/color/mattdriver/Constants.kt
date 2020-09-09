@@ -3,6 +3,7 @@ package com.color.mattdriver
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Resources
+import android.location.Location
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.VibrationEffect
@@ -12,8 +13,10 @@ import android.util.TypedValue
 import androidx.appcompat.app.AppCompatDelegate
 import com.google.gson.Gson
 import com.color.mattdriver.Models.number
+import com.google.android.gms.maps.model.LatLng
 import com.google.gson.reflect.TypeToken
 import java.io.Serializable
+import java.math.RoundingMode
 import java.util.*
 
 class Constants {
@@ -41,6 +44,8 @@ class Constants {
     val doc_phone = "doc_phone"
     val pass = "gHH5SGcFemdzqHmNCbjy3AHWiun1"
     val drivers = "drivers"
+    val closeness_limit = 0.69
+    val auto_swapp_route = "auto_swapp_route"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -220,6 +225,16 @@ class Constants {
             return pref.getString(session_data,"")!!
         }
 
+        fun can_auto_swapp_route(): Boolean{
+            val pref: SharedPreferences = applicationContext.getSharedPreferences(auto_swapp_route, Context.MODE_PRIVATE)
+            return pref.getBoolean(auto_swapp_route, false)
+        }
+
+        fun auto_swapp_route(auto: Boolean){
+            val pref: SharedPreferences = applicationContext.getSharedPreferences(auto_swapp_route, Context.MODE_PRIVATE)
+            pref.edit().putBoolean(auto_swapp_route, auto).apply()
+        }
+
     }
 
     inner class user(var phone: number, val email: String, var name: String, val sign_up_time: Long, val uid: String): Serializable
@@ -263,5 +278,38 @@ class Constants {
 
 
 
+    fun distance_km(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        return (distance_mi(lat1,lon1,lat2,lon2)/0.62137).toBigDecimal().setScale(2, RoundingMode.HALF_EVEN).toDouble()
+    }
+
+    fun distance_mi(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val theta = lon1 - lon2
+        var dist = (Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + (Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(theta))))
+        dist = Math.acos(dist)
+        dist = rad2deg(dist)
+        dist = dist * 60 * 1.1515
+        return dist.toBigDecimal().setScale(2, RoundingMode.HALF_EVEN).toDouble()
+    }
+
+    fun deg2rad(deg: Double): Double {
+        return deg * Math.PI / 180.0
+    }
+
+    fun rad2deg(rad: Double): Double {
+        return rad * 180.0 / Math.PI
+    }
+
+    fun distance_to(lat_lng: LatLng, other_lat_lng: LatLng): Long{
+        val loc1 = Location("")
+        loc1.latitude = lat_lng.latitude
+        loc1.longitude = lat_lng.longitude
+
+        val loc2 = Location("")
+        loc2.latitude = other_lat_lng.latitude
+        loc2.longitude = other_lat_lng.longitude
+
+        val distanceInMeters = loc1.distanceTo(loc2)
+        return distanceInMeters.toLong()
+    }
 
 }

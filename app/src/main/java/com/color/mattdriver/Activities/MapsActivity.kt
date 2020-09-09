@@ -619,6 +619,11 @@ class MapsActivity : AppCompatActivity(),
                         val creater = item["creater"] as String
 
                         val route = Gson().fromJson(item["route"].toString(), route::class.java)
+                        var disabled = false
+                        if(item.contains("disabled")){
+                            disabled = item["disabled"] as Boolean
+                        }
+                        route.disabled = disabled
 
                         routes.add(route)
                     }
@@ -834,11 +839,13 @@ class MapsActivity : AppCompatActivity(),
         added_bus_stops.clear()
         set_start_pos = null
         set_start_pos_desc = ""
+        binding.startLocationDescription.text = ""
         set_start_pos_id = ""
         start_pos_geo_data= null
 
         set_end_pos= null
         set_end_pos_desc = ""
+        binding.endLocationDescription.text = ""
         set_end_pos_id = ""
         end_pos_geo_data= null
         drawn_polyline.clear()
@@ -1035,7 +1042,8 @@ class MapsActivity : AppCompatActivity(),
             binding.addStopLayout.visibility = View.VISIBLE
             binding.setEndingLayout.visibility = View.VISIBLE
             binding.setStartingLayout.visibility = View.VISIBLE
-        }else{
+        }
+        else{
             binding.finishCreateLayout.visibility = View.GONE
             binding.addStopLayout.visibility = View.GONE
             binding.setEndingLayout.visibility = View.GONE
@@ -1193,14 +1201,21 @@ class MapsActivity : AppCompatActivity(),
 
         if(set_start_pos!=null){
             binding.endingLocationPart.visibility = View.VISIBLE
+        }else{
+            binding.endingLocationPart.visibility = View.GONE
+            binding.stopsLocationPart.visibility = View.GONE
         }
 
         if(set_end_pos!=null){
             binding.stopsLocationPart.visibility = View.VISIBLE
+        }else{
+            binding.stopsLocationPart.visibility = View.GONE
         }
 
         if(set_end_pos!=null && set_start_pos!=null){
             binding.finishCreateRoute.visibility = View.VISIBLE
+        }else{
+            binding.finishCreateRoute.visibility = View.GONE
         }
 
         show_all_markers()
@@ -1425,10 +1440,44 @@ class MapsActivity : AppCompatActivity(),
     fun when_location_gotten(){
         val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
         val ll = LatLng(last_loc.latitude,last_loc.longitude)
+
         if(can_update_my_location)load_my_location_on_map()
         if(can_share_location){
             set_location_data_in_firebase(ll)
         }
+
+        if(get_active_route()!=null && constants.SharedPreferenceManager(applicationContext).can_auto_swapp_route()){
+            if(distance_to(ll, get_active_route()!!.set_end_pos!!) <= constants.distance_threshold){
+                active_route = get_mirror_route(get_active_route()!!).route_id
+                if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation).when_route_picked(active_route)
+                }
+                if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes).when_route_picked(active_route)
+                }
+                when_active_route_set()
+                load_active_route_on_map()
+            }
+        }
+    }
+
+    fun get_mirror_route(route: route): route{
+        for(item in routes){
+            if(!item.route_id.equals(route.route_id)){
+                val start_end = Constants().distance_km(item.set_start_pos!!.latitude,item.set_start_pos!!.longitude,
+                    route.set_end_pos!!.latitude,route.set_end_pos!!.longitude)
+                Log.e(TAG, "start_end: ${start_end}")
+
+                val end_start =  Constants().distance_km(route.set_start_pos!!.latitude,route.set_start_pos!!.longitude,
+                    item.set_end_pos!!.latitude,item.set_end_pos!!.longitude)
+                Log.e(TAG, "end_start: ${end_start}")
+
+                if(start_end<=Constants().closeness_limit && end_start<=Constants().closeness_limit){
+                    return item
+                }
+            }
+        }
+        return route
     }
 
     fun getLocationDescription(lat_lng: LatLng, progress_view: ProgressBar, textview: TextView){
@@ -1822,7 +1871,7 @@ class MapsActivity : AppCompatActivity(),
         add_marker(set_start_pos!!,constants.start_loc, constants.start_loc)
         add_marker(set_end_pos!!,constants.end_loc, constants.end_loc)
         for(item in added_bus_stops){
-            add_marker(item.stop_location,constants.stop_loc, constants.stop_loc)
+            add_marker(item.stop_location,constants.stop_loc, item.creation_time.toString())
         }
 
     }
@@ -1845,6 +1894,7 @@ class MapsActivity : AppCompatActivity(),
     override fun whenSetRoute(route: route, organisation: organisation) {
         active_route = route.route_id
         onBackPressed()
+        Constants().SharedPreferenceManager(applicationContext).auto_swapp_route(false)
         if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
             (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation).when_route_picked(active_route)
         }
@@ -1864,12 +1914,14 @@ class MapsActivity : AppCompatActivity(),
         added_bus_stops.clear()
         set_start_pos = null
         set_start_pos_desc = ""
+        binding.startLocationDescription.text = ""
         set_start_pos_id = ""
         start_pos_geo_data= null
 
         set_end_pos= null
         set_end_pos_desc = ""
         set_end_pos_id = ""
+        binding.endLocationDescription.text = ""
         end_pos_geo_data= null
         drawn_polyline.clear()
         route_directions_data = null
@@ -1884,6 +1936,46 @@ class MapsActivity : AppCompatActivity(),
         onBackPressed()
         openRouteCreater(organisation)
         is_edit_route_opened = true
+    }
+
+    override fun whenDisableRoute(is_disabled: Boolean, route: route, organ: organisation) {
+        showLoadingScreen()
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        db.collection(constants.organisations)
+            .document(organ.country!!)
+            .collection(constants.country_routes)
+            .document(route.route_id)
+            .update(mapOf(
+                "disabled" to is_disabled
+            )).addOnSuccessListener {
+                hideLoadingScreen()
+
+                for(item in routes){
+                    if(item.route_id.equals(route.route_id)){
+                        item.disabled = is_disabled
+                    }
+                }
+                if(supportFragmentManager.findFragmentByTag(_view_all_routes)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_all_routes) as ViewAllRoutes)
+                        .when_route_data_updated(load_my_organisations_routes(organ))
+                }
+                if(supportFragmentManager.findFragmentByTag(_view_route)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_route) as ViewRoute)
+                        .when_route_disabled(is_disabled)
+                }
+                if(supportFragmentManager.findFragmentByTag(_view_organisation)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_organisation) as ViewOrganisation)
+                        .when_route_disabled(is_disabled, route)
+                }
+            }.addOnFailureListener {
+                hideLoadingScreen()
+                whenNetworkAvailable()
+
+                if(supportFragmentManager.findFragmentByTag(_view_route)!=null){
+                    (supportFragmentManager.findFragmentByTag(_view_route) as ViewRoute)
+                        .when_route_disabled(!is_disabled)
+                }
+            }
     }
 
     fun get_active_org(): organisation?{

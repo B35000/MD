@@ -116,17 +116,18 @@
                                 android:layout_width="match_parent"
                                 android:layout_marginTop="7dp"
                                 android:text="From: Odeon Plaza, Nairobi CBD."
-                                android:textSize="13sp"
+                                android:textSize="11sp"
                                 android:layout_height="wrap_content"/>
 
                             <TextView
                                 android:id="@+id/destination_text"
                                 android:layout_width="match_parent"
                                 android:text="To : Othaya Road Lavington, Nairobi."
-                                android:textSize="13sp"
+                                android:textSize="11sp"
                                 android:layout_height="wrap_content"/>
 
                             <TextView
+                                android:id="@+id/stops_text"
                                 android:layout_width="wrap_content"
                                 android:text="Your set route"
                                 android:textStyle="bold"
@@ -184,7 +185,7 @@
                     <RelativeLayout
                         android:id="@+id/view_all_routes_layout"
                         android:layout_width="match_parent"
-                        android:layout_marginTop="15dp"
+                        android:layout_marginTop="10dp"
                         android:visibility="gone"
                         android:layout_height="wrap_content">
 
@@ -452,6 +453,70 @@
                             </LinearLayout>
 
                         </RelativeLayout>
+
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:id="@+id/auto_change_layout"
+                        android:layout_width="match_parent"
+                        android:visibility="gone"
+                        android:layout_marginTop="30dp"
+                        android:layout_height="wrap_content">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:orientation="vertical"
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:textSize="16sp"
+                                android:textColor="@color/colorAccent"
+                                android:layout_height="wrap_content"
+                                android:text="Auto-Change Route" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_marginTop="5dp"
+                                android:layout_marginEnd="55dp"
+                                android:textSize="13sp"
+                                android:layout_height="wrap_content"
+                                android:text="Automatically change to the reverse route near destination." />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_marginTop="10dp"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/colorAccent"
+                                android:layout_height="wrap_content"
+                                android:text="Reverse route" />
+
+                            <TextView
+                                android:id="@+id/swap_origin_textview"
+                                android:layout_width="match_parent"
+                                android:layout_marginTop="3dp"
+                                android:textSize="11sp"
+                                android:layout_height="wrap_content"
+                                android:text="othaya road" />
+
+                            <TextView
+                                android:id="@+id/swap_destination_textview"
+                                android:layout_width="match_parent"
+                                android:textSize="11sp"
+                                android:layout_height="wrap_content"
+                                android:text="othaya road" />
+
+                        </LinearLayout>
+
+                        <Switch
+                            android:id="@+id/auto_swap_switch"
+                            android:layout_width="wrap_content"
+                            android:enabled="true"
+                            android:layout_marginTop="5dp"
+                            android:layout_alignParentEnd="true"
+                            android:layout_height="wrap_content"/>
 
                     </RelativeLayout>
 
