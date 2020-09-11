@@ -6,9 +6,11 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.Switch
 import android.widget.TextView
+import com.color.mattdriver.Activities.MapsActivity
 import com.color.mattdriver.Constants
 import com.color.mattdriver.Models.organisation
 import com.color.mattdriver.Models.route
@@ -25,11 +27,13 @@ class ViewRoute : Fragment() {
     private val ARG_PARAM2 = "param2"
     private val ARG_ORG = "ARG_ORG"
     private val ARG_ROUTE = "ARG_ROUTE"
+    private val ARG_ROUTE_VIEWS = "ARG_ROUTE_VIEWS"
     private val ARG_PICKED_ROUTE = "ARG_PICKED_ROUTE"
     private lateinit var my_organisation: organisation
     private lateinit var my_route: route
     private lateinit var listener: ViewRouteInterface
     private var set_route : String = ""
+    var route_views: ArrayList<MapsActivity.route_view> = ArrayList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +43,7 @@ class ViewRoute : Fragment() {
             my_organisation = Gson().fromJson(it.getString(ARG_ORG), organisation::class.java)
             my_route = Gson().fromJson(it.getString(ARG_ROUTE), route::class.java)
             set_route = it.getString(ARG_PICKED_ROUTE)!!
+            route_views = Gson().fromJson(it.getString(ARG_ROUTE_VIEWS), MapsActivity.route_view_list::class.java).route_views
         }
     }
 
@@ -55,6 +60,8 @@ class ViewRoute : Fragment() {
 
     var when_route_disabled: (is_disabled: Boolean) -> Unit = {}
 
+    var when_route_views_updated: (new_route_views: ArrayList<MapsActivity.route_view>) -> Unit = {}
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -70,6 +77,8 @@ class ViewRoute : Fragment() {
         val edit_layout: RelativeLayout = va.findViewById(R.id.edit_layout)
         val remove_route_switch: Switch = va.findViewById(R.id.remove_route_switch)
         val disable_layout: RelativeLayout = va.findViewById(R.id.disable_layout)
+        val number_of_views_layout: LinearLayout = va.findViewById(R.id.number_of_views_layout)
+        val views_text: TextView = va.findViewById(R.id.views_text)
 
         val money: RelativeLayout = va.findViewById(R.id.money)
 
@@ -119,12 +128,33 @@ class ViewRoute : Fragment() {
             my_route.disabled = it
         }
 
+        if(route_views.isNotEmpty()){
+            number_of_views_layout.visibility = View.VISIBLE
+            if(route_views.size==1){
+                views_text.text = "1 view."
+            }else{
+                views_text.text = "${route_views.size} views."
+            }
+        }
+
+        when_route_views_updated = {
+            route_views = it
+            if(route_views.isNotEmpty()){
+                number_of_views_layout.visibility = View.VISIBLE
+                if(route_views.size==1){
+                    views_text.text = "1 view."
+                }else{
+                    views_text.text = "${route_views.size} views."
+                }
+            }
+        }
+
         return va
     }
 
     companion object {
         @JvmStatic
-        fun newInstance(param1: String, param2: String,org: String, route: String, picked_route: String) =
+        fun newInstance(param1: String, param2: String,org: String, route: String, picked_route: String, route_views: String) =
             ViewRoute().apply {
                 arguments = Bundle().apply {
                     putString(ARG_PARAM1, param1)
@@ -132,6 +162,7 @@ class ViewRoute : Fragment() {
                     putString(ARG_ORG,org)
                     putString(ARG_ROUTE,route)
                     putString(ARG_PICKED_ROUTE,picked_route)
+                    putString(ARG_ROUTE_VIEWS,route_views)
                 }
             }
     }

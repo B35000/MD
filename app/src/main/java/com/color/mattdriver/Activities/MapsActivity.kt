@@ -58,6 +58,8 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
@@ -250,7 +252,92 @@ class MapsActivity : AppCompatActivity(),
         if(!intent.hasExtra(constants.intent_source)){
             Constants().maintain_theme(applicationContext)
         }
+
     }
+
+    var route_views_listener: ListenerRegistration? = null
+    var route_views: ArrayList<route_view> = ArrayList()
+    var route_views_items: ArrayList<String> = ArrayList()
+    fun set_route_views_listener(route: route){
+//        route_views.clear()
+//        route_views_items.clear()
+        route_views_listener?.remove()
+
+        val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+        route_views_listener = db.collection(constants.organisations)
+            .document(user.phone.country_name)
+            .collection(constants.country_routes)
+            .document(route.route_id)
+            .collection(constants.views)
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) {
+                    Log.w(TAG, "listen:error", e)
+                    return@addSnapshotListener
+                }
+
+                for (dc in snapshots!!.documentChanges) {
+                    if(dc.type.equals(DocumentChange.Type.ADDED)){
+//                            Log.d(TAG, "New location: ${dc.document.data}")
+                    }else if(dc.type.equals(DocumentChange.Type.MODIFIED)){
+//                            Log.d(TAG, "Modified location: ${dc.document.data}")
+                    }else if(dc.type.equals(DocumentChange.Type.REMOVED)){
+//                            Log.d(TAG, "Removed location: ${dc.document.data}")
+                    }
+
+                    val view_id = dc.document["view_id"] as String
+                    val creation_time = dc.document["creation_time"] as Long
+                    val route_id = dc.document["route"] as String
+                    val driver_id = dc.document["driver_id"] as String
+                    val viewer_id = dc.document["viewer_id"] as String
+                    val viewer_lat_lng = Gson().fromJson(dc.document["viewer_lat_lng"] as String, LatLng::class.java)
+
+                    val route_viewing = route_view(view_id,creation_time,route_id,driver_id,viewer_id,viewer_lat_lng)
+                    if(!route_views_items.contains(view_id)){
+                        route_views.add(route_viewing)
+                        route_views_items.add(view_id)
+                        when_route_viewed(route_viewing)
+                    }
+                }
+            }
+    }
+
+    fun get_route_views_first(route: route){
+        route_views.clear()
+        route_views_items.clear()
+        val user = constants.SharedPreferenceManager(applicationContext).getPersonalInfo()!!
+        db.collection(constants.organisations)
+            .document(user.phone.country_name)
+            .collection(constants.country_routes)
+            .document(route.route_id)
+            .collection(constants.views)
+            .get().addOnSuccessListener {
+                whenNetworkAvailable()
+                if(!it.isEmpty){
+                    for(dc in it){
+                        val view_id = dc["view_id"] as String
+                        val creation_time = dc["creation_time"] as Long
+                        val route_id = dc["route"] as String
+                        val driver_id = dc["driver_id"] as String
+                        val viewer_id = dc["viewer_id"] as String
+                        val viewer_lat_lng = Gson().fromJson(dc["viewer_lat_lng"] as String, LatLng::class.java)
+
+                        val route_viewing = route_view(view_id,creation_time,route_id,driver_id,viewer_id,viewer_lat_lng)
+                        if(!route_views_items.contains(view_id)){
+                            route_views.add(route_viewing)
+                            route_views_items.add(view_id)
+                        }
+                    }
+
+                }
+                set_route_views_listener(route)
+            }.addOnFailureListener {
+                whenNetworkLost()
+            }
+    }
+
+    class route_view(var view_id: String, var creation_time: Long, var route: String, var driver_id: String, var viewer_id: String, var viewer_lat_lng: LatLng)
+
+    class route_view_list(var route_views: ArrayList<route_view>)
 
     fun open_welcome_fragment(){
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
@@ -466,6 +553,7 @@ class MapsActivity : AppCompatActivity(),
         if (this.mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(locationCallback)
         }
+        route_views_listener?.remove()
         store_session_data()
         remove_notification()
     }
@@ -890,15 +978,16 @@ class MapsActivity : AppCompatActivity(),
     override fun viewRoute(route: route, organisation: organisation) {
         var org_string = Gson().toJson(organisation)
         var route_string = Gson().toJson(route)
+        var route_viewz = Gson().toJson(route_view_list(filter_views(route_views)))
 
         if(open_route_info_with_anim) {
             supportFragmentManager.beginTransaction()
                 .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-                .add(binding.money.id, ViewRoute.newInstance("", "", org_string, route_string, active_route), _view_route).commit()
+                .add(binding.money.id, ViewRoute.newInstance("", "", org_string, route_string, active_route,route_viewz), _view_route).commit()
         }else{
             open_route_info_with_anim = true
             supportFragmentManager.beginTransaction()
-                .add(binding.money.id, ViewRoute.newInstance("", "", org_string, route_string, active_route), _view_route).commit()
+                .add(binding.money.id, ViewRoute.newInstance("", "", org_string, route_string, active_route,route_viewz), _view_route).commit()
         }
 
     }
@@ -2055,6 +2144,7 @@ class MapsActivity : AppCompatActivity(),
             store_session_data()
 
             show_all_markers()
+            get_route_views_first(active_route)
         }
     }
 
@@ -2610,8 +2700,9 @@ class MapsActivity : AppCompatActivity(),
     override fun whenViewAllRoutesViewRoute(route: route, organisation: organisation) {
         var org_string = Gson().toJson(organisation)
         var route_string = Gson().toJson(route)
+        var route_viewz = Gson().toJson(route_view_list(filter_views(route_views)))
         supportFragmentManager.beginTransaction().setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
-            .add(binding.money.id,ViewRoute.newInstance("","",org_string,route_string,active_route),_view_route).commit()
+            .add(binding.money.id,ViewRoute.newInstance("","",org_string,route_string,active_route,route_viewz),_view_route).commit()
 
     }
 
@@ -2646,14 +2737,14 @@ class MapsActivity : AppCompatActivity(),
                 if (lastUserCircle != null) {
                     Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
                     lastUserCircle!!.setRadius((animation.getAnimatedValue()  as Float).toDouble())
-                    var col = Color.BLACK
+                    var col = Color.parseColor("#2271cce7")
                     if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
                         col = Color.GRAY
                     }
                     lastUserCircle!!.fillColor = adjustAlpha(col, (rad - (animation.getAnimatedValue() as Float))/rad)
                 } else {
                     Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
-                    var col = Color.BLACK
+                    var col = Color.parseColor("#2271cce7")
                     if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
                         col = Color.GRAY
                     }
@@ -2685,4 +2776,70 @@ class MapsActivity : AppCompatActivity(),
         va.start()
         return va
     }
+
+
+    private var lastViewCircle: Circle? = null
+    private var lastViewPulseAnimator: ValueAnimator? = null
+    var view_rad = 300f
+    fun when_route_viewed(view: route_view){
+        if(supportFragmentManager.findFragmentByTag(_view_route)!=null){
+            (supportFragmentManager.findFragmentByTag(_view_route) as ViewRoute).when_route_views_updated(route_views)
+        }
+
+        val userLatlng = view.viewer_lat_lng
+        if (lastViewPulseAnimator != null) {
+            lastViewPulseAnimator!!.cancel()
+            Log.d("onLocationUpdated: ", "cancelled")
+        }
+        if (lastViewCircle != null) lastViewCircle!!.center = userLatlng
+        lastViewPulseAnimator = valueAnimat( AnimatorUpdateListener { animation ->
+            if (lastViewCircle != null) {
+                Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+                lastViewCircle!!.setRadius((animation.getAnimatedValue()  as Float).toDouble())
+                var col = Color.DKGRAY
+                if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
+                    col = Color.LTGRAY
+                }
+                lastViewCircle!!.fillColor = adjustAlpha(col, (view_rad - (animation.getAnimatedValue() as Float))/view_rad)
+
+                if((animation.getAnimatedValue() as Float)==view_rad){
+                    //were done
+//                    lastViewCircle!!.remove()
+                }
+            } else {
+                Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+                var col = Color.DKGRAY
+                if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
+                    col = Color.LTGRAY
+                }
+                lastViewCircle = mMap.addCircle(CircleOptions()
+                    .center(userLatlng)
+                    .radius((animation.getAnimatedValue() as Float).toDouble())
+                    .fillColor(col)
+                    .strokeWidth(0f)
+                )
+            }
+        })
+    }
+
+    protected fun valueAnimat( updateListener: AnimatorUpdateListener?): ValueAnimator? {
+//        Log.d("valueAnimate: ", "called")
+        val va = ValueAnimator.ofFloat(0f, view_rad)
+        va.duration = pulseDuration
+        va.addUpdateListener(updateListener)
+        va.interpolator = LinearOutSlowInInterpolator()
+        va.start()
+        return va
+    }
+
+    fun filter_views(views: ArrayList<route_view>): ArrayList<route_view>{
+        val new_list: ArrayList<route_view> = ArrayList()
+        for(item in views){
+            if(Calendar.getInstance().timeInMillis-(1000*60*60)<= item.creation_time){
+                new_list.add(item)
+            }
+        }
+        return new_list
+    }
+
 }
