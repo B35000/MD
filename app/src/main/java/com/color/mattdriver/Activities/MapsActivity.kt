@@ -2,6 +2,7 @@ package com.color.mattdriver.Activities
 
 import android.Manifest
 import android.animation.ValueAnimator
+import android.animation.ValueAnimator.AnimatorUpdateListener
 import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -245,6 +246,10 @@ class MapsActivity : AppCompatActivity(),
                 show_all_markers()
             }
         }
+
+        if(!intent.hasExtra(constants.intent_source)){
+            Constants().maintain_theme(applicationContext)
+        }
     }
 
     fun open_welcome_fragment(){
@@ -411,6 +416,7 @@ class MapsActivity : AppCompatActivity(),
         }
     }
 
+    var loc_acc: Float = 1f
     fun set_up_getting_my_location(){
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
             PackageManager.PERMISSION_GRANTED &&
@@ -434,6 +440,7 @@ class MapsActivity : AppCompatActivity(),
                     }
                     for (location in locationResult.locations) {
                         if (location != null) {
+                            loc_acc = location.accuracy
                             wayLatitude = location.latitude
                             wayLongitude = location.longitude
                             Log.e(TAG,"wayLatitude: ${wayLatitude} longitude: ${wayLongitude}")
@@ -949,7 +956,7 @@ class MapsActivity : AppCompatActivity(),
 
 
 
-
+    var auto_adjust_to_my_loc = false
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         if(Constants().SharedPreferenceManager(applicationContext).isDarkModeOn()) {
@@ -1004,6 +1011,26 @@ class MapsActivity : AppCompatActivity(),
                 .setCountry(user!!.phone.country_name_code)
                 .build(this)
             startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE)
+        }
+
+        binding.findMeCardview.setOnClickListener {
+            auto_adjust_to_my_loc = false
+            binding.locateIcon.setImageResource(R.drawable.locate_icon)
+            move_cam_to_my_location()
+        }
+
+        binding.findMeCardview.setOnLongClickListener {
+            if(!auto_adjust_to_my_loc){
+                Toast.makeText(applicationContext,"Auto-location on",Toast.LENGTH_SHORT).show()
+                auto_adjust_to_my_loc = true
+                binding.locateIcon.setImageResource(R.drawable.locate_icon_green)
+            }else{
+                Toast.makeText(applicationContext,"Auto-location off",Toast.LENGTH_SHORT).show()
+                auto_adjust_to_my_loc = false
+                binding.locateIcon.setImageResource(R.drawable.locate_icon)
+            }
+
+            true
         }
 
         load_active_route_on_map()
@@ -1265,6 +1292,16 @@ class MapsActivity : AppCompatActivity(),
             mMap.cameraPosition.zoom))
     }
 
+    fun move_cam_to_my_location(){
+        if(mLastKnownLocations.isNotEmpty()) {
+            val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
+            val ll = LatLng(last_loc.latitude, last_loc.longitude)
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(ll.latitude, ll.longitude), mMap.cameraPosition.zoom))
+        }else{
+            set_up_getting_my_location()
+        }
+    }
+
 
 
 
@@ -1438,12 +1475,21 @@ class MapsActivity : AppCompatActivity(),
     }
 
     fun when_location_gotten(){
+        Log.e("when_location_gotten","when location gotten")
         val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
         val ll = LatLng(last_loc.latitude,last_loc.longitude)
 
         if(can_update_my_location)load_my_location_on_map()
         if(can_share_location){
             set_location_data_in_firebase(ll)
+            if(mLastKnownLocations.size%2==0){
+                //every three updates
+                addPulsatingEffect(LatLng(last_loc.latitude,last_loc.longitude))
+            }
+        }
+        if(auto_adjust_to_my_loc) {
+            Log.e("when_location_gotten","adjusting to my location")
+            move_cam_to_my_location()
         }
 
         if(get_active_route()!=null && constants.SharedPreferenceManager(applicationContext).can_auto_swapp_route()){
@@ -1557,9 +1603,9 @@ class MapsActivity : AppCompatActivity(),
             if(directionsData.routes.isNotEmpty()){
                 val route = directionsData.routes[0]
                 for(leg in route.legs){
-                    Log.e(TAG, "leg start adress: ${leg.start_address}")
+//                    Log.e(TAG, "leg start adress: ${leg.start_address}")
                     for(step in leg.steps){
-                        Log.e(TAG,"step maneuver: ${step.maneuver}")
+//                        Log.e(TAG,"step maneuver: ${step.maneuver}")
                         val pathh: List<LatLng> = PolyUtil.decode(step.polyline.points)
                         entire_path.add(pathh)
                     }
@@ -1858,9 +1904,9 @@ class MapsActivity : AppCompatActivity(),
         if(route_directions_data!!.routes.isNotEmpty()){
             val route = route_directions_data!!.routes[0]
             for(leg in route.legs){
-                Log.e(TAG, "leg start adress: ${leg.start_address}")
+//                Log.e(TAG, "leg start adress: ${leg.start_address}")
                 for(step in leg.steps){
-                    Log.e(TAG,"step maneuver: ${step.maneuver}")
+//                    Log.e(TAG,"step maneuver: ${step.maneuver}")
                     val pathh: List<LatLng> = PolyUtil.decode(step.polyline.points)
                     entire_path.add(pathh)
                 }
@@ -2031,9 +2077,9 @@ class MapsActivity : AppCompatActivity(),
             if (get_active_route()!!.route_directions_data!!.routes.isNotEmpty()) {
                 val route = get_active_route()!!.route_directions_data!!.routes[0]
                 for (leg in route.legs) {
-                    Log.e(TAG, "leg start adress: ${leg.start_address}")
+//                    Log.e(TAG, "leg start adress: ${leg.start_address}")
                     for (step in leg.steps) {
-                        Log.e(TAG, "step maneuver: ${step.maneuver}")
+//                        Log.e(TAG, "step maneuver: ${step.maneuver}")
                         val pathh: List<LatLng> = PolyUtil.decode(step.polyline.points)
                         entire_path.add(pathh)
                     }
@@ -2147,9 +2193,9 @@ class MapsActivity : AppCompatActivity(),
         if (set_route.route_directions_data!!.routes.isNotEmpty()) {
             val route = set_route.route_directions_data!!.routes[0]
             for (leg in route.legs) {
-                Log.e(TAG, "leg start adress: ${leg.start_address}")
+//                Log.e(TAG, "leg start adress: ${leg.start_address}")
                 for (step in leg.steps) {
-                    Log.e(TAG, "step maneuver: ${step.maneuver}")
+//                    Log.e(TAG, "step maneuver: ${step.maneuver}")
                     val pathh: List<LatLng> = PolyUtil.decode(step.polyline.points)
                     entire_path.add(pathh)
                 }
@@ -2570,4 +2616,73 @@ class MapsActivity : AppCompatActivity(),
     }
 
 
+    protected fun getDisplayPulseRadius(radius: Float): Float {
+        val diff: Float = mMap.getMaxZoomLevel() - mMap.getCameraPosition().zoom
+        if (diff < 3) return radius
+        if (diff < 3.7) return radius * (diff / 2)
+        if (diff < 4.5) return radius * diff
+        if (diff < 5.5) return radius * diff * 1.5f
+        if (diff < 7) return radius * diff * 2f
+        if (diff < 7.8) return radius * diff * 3.5f
+        if (diff < 8.5) return (radius * diff) * 5
+        if (diff < 10) return radius * diff * 10f
+        if (diff < 12) return radius * diff * 18f
+        if (diff < 13) return radius * diff * 28f
+        if (diff < 16) return radius * diff * 40f
+        return if (diff < 18) radius * diff * 60 else radius * diff * 80
+    }
+
+    private var lastUserCircle: Circle? = null
+    private val pulseDuration: Long = 2500
+    private var lastPulseAnimator: ValueAnimator? = null
+    var rad = 300f
+    private fun addPulsatingEffect(userLatlng: LatLng) {
+        if (lastPulseAnimator != null) {
+            lastPulseAnimator!!.cancel()
+            Log.d("onLocationUpdated: ", "cancelled")
+        }
+        if (lastUserCircle != null) lastUserCircle!!.center = userLatlng
+        lastPulseAnimator = valueAnimate( AnimatorUpdateListener { animation ->
+                if (lastUserCircle != null) {
+                    Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+                    lastUserCircle!!.setRadius((animation.getAnimatedValue()  as Float).toDouble())
+                    var col = Color.BLACK
+                    if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
+                        col = Color.GRAY
+                    }
+                    lastUserCircle!!.fillColor = adjustAlpha(col, (rad - (animation.getAnimatedValue() as Float))/rad)
+                } else {
+                    Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+                    var col = Color.BLACK
+                    if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
+                        col = Color.GRAY
+                    }
+                    lastUserCircle = mMap.addCircle(CircleOptions()
+                            .center(userLatlng)
+                            .radius((animation.getAnimatedValue() as Float).toDouble())
+                            .fillColor(col)
+                            .strokeWidth(0f)
+                    )
+                }
+            })
+    }
+
+    fun adjustAlpha(color: Int, factor: Float): Int {
+        val alpha = Math.round(Color.alpha(color) * factor)
+//        Log.e("adjustAlpha","adjusted alpha is ${alpha}")
+        val red = Color.red(color)
+        val green = Color.green(color)
+        val blue = Color.blue(color)
+        return Color.argb(alpha, red, green, blue)
+    }
+
+    protected fun valueAnimate( updateListener: AnimatorUpdateListener?): ValueAnimator? {
+//        Log.d("valueAnimate: ", "called")
+        val va = ValueAnimator.ofFloat(0f, rad)
+        va.duration = pulseDuration
+        va.addUpdateListener(updateListener)
+        va.interpolator = LinearOutSlowInInterpolator()
+        va.start()
+        return va
+    }
 }

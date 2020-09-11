@@ -46,6 +46,8 @@ class Constants {
     val drivers = "drivers"
     val closeness_limit = 0.69
     val auto_swapp_route = "auto_swapp_route"
+    val intent_source = "from"
+    val splashActivity = "SplashActivity"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
