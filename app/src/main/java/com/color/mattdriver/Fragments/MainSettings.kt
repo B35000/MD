@@ -1,6 +1,8 @@
 package com.color.mattdriver.Fragments
 
 import android.content.Context
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -80,6 +82,15 @@ class MainSettings : Fragment() {
 
         didUserSignUp = {
             sign_in_view.visibility = View.GONE
+        }
+
+        val app_vid: TextView = va.findViewById(R.id.app_vid)
+        try {
+            val pInfo: PackageInfo = context!!.packageManager.getPackageInfo(context!!.getPackageName(), 0)
+            val version = pInfo.versionName
+            app_vid.text = "Version ${version}"
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
         }
 
         return va

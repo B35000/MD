@@ -249,9 +249,7 @@ class MapsActivity : AppCompatActivity(),
             }
         }
 
-        if(!intent.hasExtra(constants.intent_source)){
-            Constants().maintain_theme(applicationContext)
-        }
+
 
     }
 
@@ -568,6 +566,10 @@ class MapsActivity : AppCompatActivity(),
         Log.e(TAG,"onStart")
         super.onStart()
         set_session_data()
+
+        Constants().maintain_theme(applicationContext)
+        if(!intent.hasExtra(constants.intent_source)){
+        }
     }
 
     override fun onPause() {
