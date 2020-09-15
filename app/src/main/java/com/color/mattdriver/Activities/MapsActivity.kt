@@ -249,7 +249,7 @@ class MapsActivity : AppCompatActivity(),
             }
         }
 
-
+        set_up_driver_listeners()
 
     }
 
@@ -631,6 +631,7 @@ class MapsActivity : AppCompatActivity(),
                 }
                 if(organisations.isNotEmpty()){
                     load_organisation_drivers()
+                    set_up_driver_listeners()
                 }else{
                     store_session_data()
                     if(supportFragmentManager.findFragmentByTag(_join_organisation)!=null){
@@ -2843,5 +2844,270 @@ class MapsActivity : AppCompatActivity(),
         }
         return new_list
     }
+
+
+
+    var positions: HashMap<String,ArrayList<driver_pos>> = HashMap()
+    var added_postitions: ArrayList<String> = ArrayList()
+    var driver_listeners: ArrayList<ListenerRegistration> = ArrayList()
+
+    fun set_up_driver_listeners(){
+        remove_driver_liseners()
+        set_driver_listener_updates()
+    }
+
+    fun set_driver_listener_updates(){
+        remove_driver_liseners()
+        val t = Calendar.getInstance().timeInMillis
+        for(org in organisations){
+            val org_listener = db.collection(constants.organisations)
+                .document(org.country!!)
+                .collection(constants.country_organisations)
+                .document(org.org_id!!)
+                .collection(constants.driver_locations)
+                .whereGreaterThanOrEqualTo("creation_time", t)
+                .addSnapshotListener { snapshots, e ->
+                    if (e != null) {
+                        Log.w(TAG, "listen:error", e)
+                        return@addSnapshotListener
+                    }
+
+                    for (dc in snapshots!!.documentChanges) {
+                        if(dc.type.equals(DocumentChange.Type.ADDED)){
+//                            Log.d(TAG, "New location: ${dc.document.data}")
+                        }
+                        else if(dc.type.equals(DocumentChange.Type.MODIFIED)){
+//                            Log.d(TAG, "Modified location: ${dc.document.data}")
+                        }
+                        else if(dc.type.equals(DocumentChange.Type.REMOVED)){
+//                            Log.d(TAG, "Removed location: ${dc.document.data}")
+                        }
+
+                        val pos_id = dc.document["pos_id"] as String
+                        val creation_time = dc.document["creation_time"] as Long
+                        val user = dc.document["user"] as String
+                        val loc = Gson().fromJson(dc.document["loc"] as String, LatLng::class.java)
+                        val organisation = dc.document["organisation"] as String
+                        val route = dc.document["route"] as String
+
+                        val driverPos = driver_pos(pos_id,creation_time,user,loc,organisation,route)
+                        Log.e(TAG, "checking if location item is already there")
+                        if(!is_location_contained(driverPos) && Calendar.getInstance().timeInMillis-creation_time <= constants.update_limit){
+                            put_position_item(driverPos)
+                            added_postitions.add(driverPos.pos_id)
+                            Log.e(TAG, "its not! adding")
+                            when_driver_position_updated(driverPos)
+                        }
+                    }
+                }
+            driver_listeners.add(org_listener)
+        }
+
+    }
+
+    fun remove_driver_liseners(){
+        if(driver_listeners.isNotEmpty()){
+            for(item in driver_listeners){
+                item.remove()
+            }
+            driver_listeners.clear()
+        }
+    }
+
+    fun when_driver_position_updated(driverPos: driver_pos){
+        Log.e(TAG,"Updated driver loc: ${driverPos.pos_id}")
+        val uid = FirebaseAuth.getInstance().currentUser!!.uid
+        if(!driverPos.driver_id.equals(uid))set_drivers_on_map(driverPos.driver_id)
+    }
+
+    class driver_pos(var pos_id: String, var creation_time: Long, var driver_id: String, var loc: LatLng, var organisation_id: String, var route_id: String){
+
+    }
+
+    fun is_location_contained(driverPos: driver_pos): Boolean{
+//        for(item in positions){
+//            if(item.pos_id.equals(driverPos.pos_id)){
+//                return true
+//            }
+//        }
+        return added_postitions.contains(driverPos.pos_id)
+    }
+
+    fun put_position_item(locationPos: driver_pos){
+        if(positions.containsKey(locationPos.driver_id)){
+            positions.get(locationPos.driver_id)!!.add(locationPos)
+        }else{
+            val drivers_locations: ArrayList<driver_pos> = ArrayList()
+            drivers_locations.add(locationPos)
+            positions.put(locationPos.driver_id,drivers_locations)
+        }
+    }
+
+
+
+
+
+    val driver_map_markers: HashMap<String, Marker> = HashMap()
+    val driver_map_marker_trail: HashMap<String, ArrayList<Circle>> = HashMap()
+    fun set_drivers_on_map(driver: String){
+        val drivers_last_locations = get_drivers_last_few_locations(positions.get(driver)!!)
+        val drivers_last_location = drivers_last_locations[drivers_last_locations.lastIndex].loc
+
+        if(driver_map_markers.containsKey(driver)){
+            driver_map_markers.get(driver)!!.position = drivers_last_location
+//            driver_map_markers.remove(driver)
+        }else{
+            val op = MarkerOptions().position(drivers_last_location)
+            val final_icon: BitmapDrawable?  = getDrawable(R.drawable.bus_loc) as BitmapDrawable
+
+            val height = 108
+            val width = 55
+            if(final_icon!=null) {
+                val b: Bitmap = final_icon.bitmap
+                val smallMarker: Bitmap = Bitmap.createScaledBitmap(b, width, height, false)
+                op.icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
+            }
+
+            val driver_marker = mMap.addMarker(op)
+            driver_marker.tag = driver
+            driver_map_markers.put(driver,driver_marker)
+        }
+
+        if(driver_map_marker_trail.containsKey(driver)){
+            for(circle in driver_map_marker_trail.get(driver)!!){
+                circle.remove()
+            }
+            driver_map_marker_trail.get(driver)!!.clear()
+            driver_map_marker_trail.remove(driver)
+        }
+
+
+        for(last_loc in drivers_last_locations){
+            val circleOptions = CircleOptions()
+            circleOptions.center(last_loc.loc)
+            circleOptions.radius(1.0)
+            if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()) {
+                circleOptions.fillColor(Color.LTGRAY)
+            }else{
+                circleOptions.fillColor(Color.GREEN)
+            }
+            circleOptions.strokeWidth(0f)
+            val circle = mMap.addCircle(circleOptions)
+
+            if(!driver_map_marker_trail.containsKey(driver)){
+                driver_map_marker_trail.put(driver,ArrayList<Circle>())
+            }
+            driver_map_marker_trail.get(driver)!!.add(circle)
+        }
+        Handler().postDelayed({
+            addPulsatingEffect(drivers_last_locations[drivers_last_locations.lastIndex].loc, driver)
+        }, 100)
+
+//        if(viewed_driver.equals(driver))move_camera(drivers_last_locations[drivers_last_locations.lastIndex].loc)
+    }
+
+    fun set_all_drivers(){
+        for(driver in positions.keys){
+            val drivers_last_locations = get_drivers_last_few_locations(positions.get(driver)!!)
+
+            val op = MarkerOptions().position(drivers_last_locations[drivers_last_locations.lastIndex].loc)
+            val final_icon: BitmapDrawable?  = getDrawable(R.drawable.bus_loc) as BitmapDrawable
+
+            val height = 108
+            val width = 55
+            if(final_icon!=null) {
+                val b: Bitmap = final_icon.bitmap
+                val smallMarker: Bitmap = Bitmap.createScaledBitmap(b, width, height, false)
+                op.icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
+            }
+
+            if(driver_map_markers.containsKey(driver)){
+                driver_map_markers.get(driver)!!.remove()
+                driver_map_markers.remove(driver)
+            }
+
+            if(driver_map_marker_trail.containsKey(driver)){
+                for(circle in driver_map_marker_trail.get(driver)!!){
+                    circle.remove()
+                }
+                driver_map_marker_trail.get(driver)!!.clear()
+                driver_map_marker_trail.remove(driver)
+            }
+
+            val driver_marker = mMap.addMarker(op)
+            driver_map_markers.put(driver,driver_marker)
+
+            for(last_loc in drivers_last_locations){
+                val circleOptions = CircleOptions()
+                circleOptions.center(last_loc.loc)
+                circleOptions.radius(1.0)
+                if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()) {
+                    circleOptions.fillColor(Color.LTGRAY)
+                }else{
+                    circleOptions.fillColor(Color.GREEN)
+                }
+                circleOptions.strokeWidth(0f)
+                val circle = mMap.addCircle(circleOptions)
+
+                if(!driver_map_marker_trail.containsKey(driver)){
+                    driver_map_marker_trail.put(driver,ArrayList<Circle>())
+                }
+                driver_map_marker_trail.get(driver)!!.add(circle)
+            }
+        }
+    }
+
+    fun get_drivers_last_few_locations(drivers_positions: ArrayList<driver_pos>): ArrayList<driver_pos>{
+//        val sorted_list: ArrayList<driver_pos> = ArrayList()
+//        for(item in drivers_positions.sortedWith(compareBy({ it.creation_time }))){
+//            sorted_list.add(item)
+//        }
+
+        val last_3_list: ArrayList<driver_pos> = ArrayList()
+        last_3_list.addAll(drivers_positions.takeLast(3))
+
+        return last_3_list
+
+    }
+
+    private var lastUserCircleList: HashMap<String,Circle> = HashMap()
+    private var lastPulseAnimatorList: HashMap<String,ValueAnimator> = HashMap()
+    private fun addPulsatingEffect(userLatlng: LatLng, driver: String) {
+        if (lastPulseAnimatorList.containsKey(driver)) {
+            lastPulseAnimatorList.get(driver)!!.cancel()
+        }
+        if (lastUserCircleList.containsKey(driver)) lastUserCircleList.get(driver)!!.center = userLatlng
+        var lastPulse = valueAnimate(ValueAnimator.AnimatorUpdateListener { animation ->
+            if (lastUserCircleList.containsKey(driver)) {
+                lastUserCircleList.get(driver)!!.setRadius((animation.getAnimatedValue() as Float).toDouble())
+                var col = Color.parseColor("#2271cce7")
+                if (constants.SharedPreferenceManager(applicationContext).isDarkModeOn()) {
+                    col = Color.GRAY
+                }
+                lastUserCircleList.get(driver)!!.fillColor = adjustAlpha(col, (rad - (animation.getAnimatedValue() as Float)) / rad)
+            } else {
+                var col = Color.parseColor("#2271cce7")
+                if (constants.SharedPreferenceManager(applicationContext).isDarkModeOn()) {
+                    col = Color.GRAY
+                }
+                var lastCircle = mMap.addCircle(CircleOptions()
+                    .center(userLatlng)
+                    .radius((animation.getAnimatedValue() as Float).toDouble())
+                    .fillColor(col)
+                    .strokeWidth(0f)
+                )
+                if(lastUserCircleList.containsKey(driver)){
+                    lastUserCircleList.remove(driver)
+                }
+                lastUserCircleList.put(driver,lastCircle)
+            }
+        })
+        if(lastPulseAnimatorList.containsKey(driver)){
+            lastPulseAnimatorList.remove(driver)
+        }
+        lastPulseAnimatorList.put(driver,lastPulse!!)
+    }
+
+
 
 }

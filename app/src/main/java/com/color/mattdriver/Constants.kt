@@ -49,6 +49,7 @@ class Constants {
     val intent_source = "from"
     val splashActivity = "SplashActivity"
     val views = "views"
+    val update_limit: Long = (60*1000)
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
