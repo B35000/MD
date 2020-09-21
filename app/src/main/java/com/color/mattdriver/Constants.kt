@@ -52,6 +52,8 @@ class Constants {
     val views = "views"
     val update_limit: Long = (60*1000)
     val loc_data = "loc_data"
+    val eula = "https://bryonyoni.github.io/Matt-Eula/"
+    val priv_pol = "https://bryonyoni.github.io/Matt-Eula/privacy.html"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator

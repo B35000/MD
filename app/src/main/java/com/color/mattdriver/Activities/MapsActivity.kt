@@ -289,7 +289,7 @@ class MapsActivity : AppCompatActivity(),
             can_share_location = isChecked
             if(isChecked){
                 binding.shareLocationText.text = "Stop sharing location"
-                load_notification()
+                load_notification(true)
                 binding.busIcon.setImageResource(R.drawable.bus_loc_shared)
             }else{
                 binding.shareLocationText.text = "Start sharing location"
@@ -1211,6 +1211,8 @@ class MapsActivity : AppCompatActivity(),
 
         load_active_route_on_map()
 //        show_all_markers()
+
+        onBackPressed()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -2435,8 +2437,8 @@ class MapsActivity : AppCompatActivity(),
     val notificationId = 44
 
     var builder: NotificationCompat.Builder? = null
-    fun load_notification(){
-        remove_notification()
+    fun load_notification(is_silent: Boolean){
+//        remove_notification()
 
         builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notif_icon)
@@ -2448,6 +2450,10 @@ class MapsActivity : AppCompatActivity(),
             .setOnlyAlertOnce(true)
             .setAutoCancel(false)
 
+        if(is_silent){
+            builder!!.setNotificationSilent()
+        }
+
         with(NotificationManagerCompat.from(this)) {
             // notificationId is a unique int for each notification that you must define
             notify(notificationId, builder!!.build())
@@ -2456,12 +2462,13 @@ class MapsActivity : AppCompatActivity(),
     }
 
     fun update_notification(){
-        if(builder!=null) {
-            with(NotificationManagerCompat.from(this)) {
-                // notificationId is a unique int for each notification that you must define
-                notify(notificationId, builder!!.build())
-            }
-        }
+//        if(builder!=null) {
+//            with(NotificationManagerCompat.from(this)) {
+//                // notificationId is a unique int for each notification that you must define
+//                notify(notificationId, builder!!.build())
+//            }
+//        }
+        load_notification(true)
     }
 
     fun remove_notification(){

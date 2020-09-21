@@ -17,6 +17,7 @@ class LocationUpdatesIntentService : IntentService(TAG) {
                         val wayLatitude = location.latitude
                         val wayLongitude = location.longitude
                         Log.e(TAG,"wayLatitude: ${wayLatitude} longitude: ${wayLongitude}")
+
                     }
                 }
             }
