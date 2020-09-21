@@ -328,6 +328,10 @@ class MapsActivity : AppCompatActivity(),
 
     }
 
+
+
+
+
     var route_views_listener: ListenerRegistration? = null
     var route_views: ArrayList<route_view> = ArrayList()
     var route_views_items: ArrayList<String> = ArrayList()
@@ -1650,6 +1654,7 @@ class MapsActivity : AppCompatActivity(),
         Log.e("when_location_gotten","when location gotten")
         val last_loc = mLastKnownLocations.get(mLastKnownLocations.lastIndex)
         val ll = LatLng(last_loc.latitude,last_loc.longitude)
+        update_notification()
 
         if(can_update_my_location)load_my_location_on_map()
         if(can_share_location){
@@ -2429,30 +2434,34 @@ class MapsActivity : AppCompatActivity(),
     val EXTRA_NOTIFICATION_ID = "EXTRA_NOTIFICATION_ID"
     val notificationId = 44
 
+    var builder: NotificationCompat.Builder? = null
     fun load_notification(){
         remove_notification()
 
-        val snoozeIntent = Intent(this, MapsActivity::class.java).apply {
-            action = ACTION_SNOOZE
-            putExtra(EXTRA_NOTIFICATION_ID, 0)
-        }
-        val pendingIntent: PendingIntent = PendingIntent.getBroadcast(this, 0, snoozeIntent, 0)
-
-        var builder = NotificationCompat.Builder(this, CHANNEL_ID)
-             .setSmallIcon(R.drawable.ic_notif_icon)
-             .setContentTitle("Matt Driver")
-             .setContentText("Your location is now visible to users.")
-             .setPriority(NotificationCompat.PRIORITY_HIGH)
+        builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notif_icon)
+            .setContentTitle("Matt Driver")
+            .setContentText("Your location is being shared.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
 //             .setContentIntent(pendingIntent)
 //             .addAction(R.drawable.cancel_icon, getString(R.string.stop), pendingIntent)
-             .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setAutoCancel(false)
 
         with(NotificationManagerCompat.from(this)) {
             // notificationId is a unique int for each notification that you must define
-            notify(notificationId, builder.build())
+            notify(notificationId, builder!!.build())
         }
 
+    }
 
+    fun update_notification(){
+        if(builder!=null) {
+            with(NotificationManagerCompat.from(this)) {
+                // notificationId is a unique int for each notification that you must define
+                notify(notificationId, builder!!.build())
+            }
+        }
     }
 
     fun remove_notification(){
@@ -2460,6 +2469,7 @@ class MapsActivity : AppCompatActivity(),
             // notificationId is a unique int for each notification that you must define
             cancel(notificationId)
         }
+        builder==null
     }
 
     private fun createNotificationChannel() {
