@@ -33,7 +33,30 @@
             android:launchMode="singleTop"
             android:label="@string/title_activity_maps">
 
+
+
         </activity>
+
+        <service
+            android:name=".Utilities.LocationUpdatesIntentService"
+            android:exported="false" />
+
+
+        <receiver android:name=".Utilities.LocationUpdatesBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.location.sample.locationupdatespendingintent.LocationUpdatesBroadcastReceiver.ACTION_PROCESS_UPDATES" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".Activities.MapsActivity$LocationUpdatesBroadcastReceive"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.example.Broadcast" >
+                </action>
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

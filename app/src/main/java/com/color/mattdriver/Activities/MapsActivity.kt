@@ -7,8 +7,7 @@ import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.graphics.Bitmap
@@ -43,6 +42,7 @@ import com.color.mattdriver.Fragments.*
 import com.color.mattdriver.Models.*
 import com.color.mattdriver.R
 import com.color.mattdriver.Utilities.Apis
+import com.color.mattdriver.Utilities.LocationUpdatesBroadcastReceiver
 import com.color.mattdriver.databinding.ActivityMapsBinding
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.*
@@ -125,7 +125,7 @@ class MapsActivity : AppCompatActivity(),
     var has_set_my_location = false
 
     lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
-    var mLastKnownLocations: ArrayList<Location> = ArrayList()
+    var mLastKnownLocations: ArrayList<LatLng> = ArrayList()
     var is_creating_routes = false
 
     var set_start_pos: LatLng? = null
@@ -148,7 +148,69 @@ class MapsActivity : AppCompatActivity(),
     var my_marker_trailing_markers: ArrayList<Circle> = ArrayList()
 
     var can_share_location = false
+    var sharedPreferences: SharedPreferences? = null
 
+
+
+
+
+    private val pendingIntent: PendingIntent get() {
+            val intent = Intent(this, LocationUpdatesBroadcastReceiver::class.java)
+            intent.action = LocationUpdatesBroadcastReceiver.ACTION_PROCESS_UPDATES
+            return PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        }
+
+    class LocationUpdatesBroadcastReceive : BroadcastReceiver() {
+
+        override fun onReceive(context: Context, intent: Intent?) {
+
+        }
+
+        var when_location_received: (loc: Location) -> Unit = {}
+
+        companion object {
+            private val TAG = "LUBroadcastReceiver"
+            internal val ACTION_PROCESS_UPDATES = "com.google.android.gms.location.sample.locationupdatespendingintent.action" + ".PROCESS_UPDATES"
+        }
+    }
+
+    var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if(intent.hasExtra("loc")) {
+                val it = Gson().fromJson(intent.extras!!.get("loc") as String, Location::class.java)
+
+            }
+        }
+    }
+
+    var sharedPreferenceChangeListener: SharedPreferences.OnSharedPreferenceChangeListener = object : SharedPreferences.OnSharedPreferenceChangeListener {
+
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String) {
+                if (key == constants.loc_data) {
+                    // Write your code here
+                    val loc_stirng = sharedPreferences!!.getString(constants.loc_data,"")
+                    if(!loc_stirng.equals("")) {
+                        val it = Gson().fromJson(loc_stirng, LatLng::class.java)
+
+                        wayLatitude = it.latitude
+                        wayLongitude = it.longitude
+                        Log.e(TAG, "received lat: ${wayLatitude} received long: ${wayLongitude}")
+                        if (!has_set_my_location) {
+                            has_set_my_location = true
+                            mMap.animateCamera(
+                                CameraUpdateFactory.newLatLngZoom(
+                                    LatLng(
+                                        it.latitude,
+                                        it.longitude), ZOOM
+                                )
+                            )
+                        }
+                        mLastKnownLocations.add(it)
+                        when_location_gotten()
+                    }
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.e(TAG,"onCreate")
@@ -250,6 +312,19 @@ class MapsActivity : AppCompatActivity(),
         }
 
         set_up_driver_listeners()
+
+//        val filter = IntentFilter()
+//        filter.addAction("com.example.Broadcast")
+//        val receiver = LocationUpdatesBroadcastReceive()
+//        receiver.when_location_received = {
+//
+//        }
+//        registerReceiver(receiver, filter)
+
+//        registerReceiver(broadcastReceiver, IntentFilter("INTERNET_LOST"))
+
+        sharedPreferences = getSharedPreferences(constants.loc_data, Context.MODE_PRIVATE)
+        sharedPreferences?.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
 
     }
 
@@ -516,6 +591,7 @@ class MapsActivity : AppCompatActivity(),
             locationRequest = LocationRequest.create()
             locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
             locationRequest.setInterval(constants.update_interval)
+            locationRequest.setFastestInterval(constants.fast_update_interval)
 
 
             locationCallback = object : LocationCallback() {
@@ -534,14 +610,14 @@ class MapsActivity : AppCompatActivity(),
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude,
                                     location.longitude), ZOOM))
                             }
-                            mLastKnownLocations.add(location)
+                            mLastKnownLocations.add(LatLng(location.latitude,location.longitude))
                             when_location_gotten()
                         }
                     }
                 }
             }
-            mFusedLocationClient.requestLocationUpdates(locationRequest,locationCallback,null)
-
+//            mFusedLocationClient.requestLocationUpdates(locationRequest,locationCallback,null)
+            mFusedLocationClient.requestLocationUpdates(locationRequest,pendingIntent)
         }
     }
 
@@ -549,8 +625,12 @@ class MapsActivity : AppCompatActivity(),
         Log.e(TAG,"onDestroy")
         super.onDestroy()
         if (this.mFusedLocationClient != null) {
-            mFusedLocationClient.removeLocationUpdates(locationCallback)
+//            mFusedLocationClient.removeLocationUpdates(locationCallback)
+            mFusedLocationClient.removeLocationUpdates(pendingIntent)
         }
+//        unregisterReceiver(broadcastReceiver)
+        sharedPreferences?.unregisterOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
+
         route_views_listener?.remove()
         store_session_data()
         remove_notification()
@@ -1416,8 +1496,8 @@ class MapsActivity : AppCompatActivity(),
 //            op.draggable(true)
         }
 
-        val height = 95
-        val width = 35
+        val height = 77
+        val width = 30
         if(final_icon!=null) {
             val b: Bitmap = final_icon.bitmap
             val smallMarker: Bitmap = Bitmap.createScaledBitmap(b, width, height, false)
@@ -2738,7 +2818,7 @@ class MapsActivity : AppCompatActivity(),
         if (lastUserCircle != null) lastUserCircle!!.center = userLatlng
         lastPulseAnimator = valueAnimate( AnimatorUpdateListener { animation ->
                 if (lastUserCircle != null) {
-                    Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+//                    Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
                     lastUserCircle!!.setRadius((animation.getAnimatedValue()  as Float).toDouble())
                     var col = Color.parseColor("#2271cce7")
                     if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
@@ -2746,7 +2826,7 @@ class MapsActivity : AppCompatActivity(),
                     }
                     lastUserCircle!!.fillColor = adjustAlpha(col, (rad - (animation.getAnimatedValue() as Float))/rad)
                 } else {
-                    Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+//                    Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
                     var col = Color.parseColor("#2271cce7")
                     if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
                         col = Color.GRAY
@@ -2797,7 +2877,7 @@ class MapsActivity : AppCompatActivity(),
         if (lastViewCircle != null) lastViewCircle!!.center = userLatlng
         lastViewPulseAnimator = valueAnimat( AnimatorUpdateListener { animation ->
             if (lastViewCircle != null) {
-                Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+//                Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
                 lastViewCircle!!.setRadius((animation.getAnimatedValue()  as Float).toDouble())
                 var col = Color.DKGRAY
                 if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
@@ -2810,7 +2890,7 @@ class MapsActivity : AppCompatActivity(),
 //                    lastViewCircle!!.remove()
                 }
             } else {
-                Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
+//                Log.e("addPulsatingEffect","animation value is ${(animation.getAnimatedValue() as Float)}")
                 var col = Color.DKGRAY
                 if(constants.SharedPreferenceManager(applicationContext).isDarkModeOn()){
                     col = Color.LTGRAY

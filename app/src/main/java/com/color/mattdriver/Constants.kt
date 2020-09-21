@@ -39,7 +39,8 @@ class Constants {
     val country_routes = "country_routes"
     val distance_threshold = 69
     val driver_locations = "driver_locations"
-    val update_interval: Long = (6*1000)
+    val update_interval: Long = (4*1000).toLong()
+    val fast_update_interval: Long = (2*1000).toLong()
     val coll_meta_data = "coll_meta_data"
     val doc_phone = "doc_phone"
     val pass = "gHH5SGcFemdzqHmNCbjy3AHWiun1"
@@ -50,6 +51,7 @@ class Constants {
     val splashActivity = "SplashActivity"
     val views = "views"
     val update_limit: Long = (60*1000)
+    val loc_data = "loc_data"
 
     fun touch_vibrate(context: Context?){
         val vibrator = context?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -237,6 +239,11 @@ class Constants {
         fun auto_swapp_route(auto: Boolean){
             val pref: SharedPreferences = applicationContext.getSharedPreferences(auto_swapp_route, Context.MODE_PRIVATE)
             pref.edit().putBoolean(auto_swapp_route, auto).apply()
+        }
+
+        fun store_location(data: String){
+            val pref: SharedPreferences = applicationContext.getSharedPreferences(loc_data, Context.MODE_PRIVATE)
+            pref.edit().clear().putString(loc_data, data).apply()
         }
 
     }
